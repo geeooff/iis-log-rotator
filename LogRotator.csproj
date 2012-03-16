@@ -90,6 +90,7 @@
     <Compile Include="Configuration\RuntimeConfig.cs" />
     <Compile Include="Configuration\SiteRotationSettingsElement.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Folder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
