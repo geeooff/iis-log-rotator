@@ -17,14 +17,17 @@ namespace Smartgeek.LogRotator
 		private const int MaxMissingCount = 100;
 
 		private static List<Folder> s_folders = new List<Folder>();
+		private static List<FileInfo> s_files = new List<FileInfo>();
+		private static List<FileInfo> s_filesToCompress = new List<FileInfo>();
+		private static List<FileInfo> s_filesToDelete = new List<FileInfo>();
 
 		private static void Main(string[] args)
 		{
 			Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-			//using (ServerManager serverManager = new ServerManager())
-			using (ServerManager serverManager = ServerManager.OpenRemote("rovms502"))
+			using (ServerManager serverManager = new ServerManager())
+			//using (ServerManager serverManager = ServerManager.OpenRemote("rovms502"))
 			{
 				// applicationHost.config
 				Microsoft.Web.Administration.Configuration config = serverManager.GetApplicationHostConfiguration();
@@ -190,9 +193,10 @@ namespace Smartgeek.LogRotator
 				for (int index = 1; ; index++)
 				{
 					String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index));
+					String compressedFilename = String.Concat(filename, ".zip");
 					String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index + 1));
 
-					// break on last log file
+					// break on last log file extent
 					// we don't know if IIS is still using it
 					if (!File.Exists(nextFilename))
 					{
@@ -202,49 +206,125 @@ namespace Smartgeek.LogRotator
 					}
 
 					FileInfo fi = new FileInfo(filename);
+					FileInfo fic = new FileInfo(compressedFilename);
+
+					if (!fi.Exists && !fic.Exists)
+					{
+						break;
+					}
 
 					// deletion
 					if ((useUTC && fi.CreationTimeUtc > deleteAfterDate) || (!useUTC && fi.CreationTime > deleteAfterDate))
 					{
-						Console.Out.Write("Deleting {0}... ", filename);
-						try
-						{
-							//fi.Delete();
-							Trace.TraceInformation("{0} deleted", filename);
-							Console.Out.WriteLine("OK");
-						}
-						catch (Exception ex)
-						{
-							Trace.TraceError("{0} delete error: {1}", filename, ex.Message);
-							Trace.TraceError(ex.ToString());
-							Console.Out.WriteLine("ERROR: {0}", ex.Message);
-						}
+						Delete(fi);
+					}
+					if ((useUTC && fic.CreationTimeUtc > deleteAfterDate) || (!useUTC && fic.CreationTime > deleteAfterDate))
+					{
+						Delete(fic);
 					}
 
 					// compression
-					/*if (((useUTC && fi.CreationTimeUtc > compressAfterDate) || (!useUTC && fi.CreationTime > compressAfterDate)) && fi.Attributes )
+					if ((useUTC && fi.CreationTimeUtc > compressAfterDate) || (!useUTC && fi.CreationTime > compressAfterDate))
 					{
-						Console.Out.Write("Compressing {0}... ", filename);
-						try
+						if (Compress(fi, fic))
 						{
-							//fi.Delete();
-							Trace.TraceInformation("{0} compressed", filename);
-							Trace.TraceInformation("{0} deleted", filename);
-							Console.Out.WriteLine("OK");
+							Delete(fi);
 						}
-						catch (Exception ex)
-						{
-							Trace.TraceError("{0} delete error: {1}", filename, ex.Message);
-							Trace.TraceError(ex.ToString());
-							Console.Out.WriteLine("ERROR: {0}", ex.Message);
-						}
-					}*/
+					}
 				}
 			}
 			// time-based rollover
 			else
 			{
-				// TODO
+				DateTime reference = now, lastReference = reference, nextReference;
+				FileInfo lastReferenceFileInfo = null;
+
+				do
+				{
+					switch (folder.Period)
+					{
+						case Folder.PeriodType.Hourly: reference = reference.AddHours(-1d); nextReference = reference.AddHours(-1d); break;
+						case Folder.PeriodType.Daily: reference = reference.AddDays(-1d); nextReference = reference.AddDays(-1d); break;
+						case Folder.PeriodType.Weekly: reference = reference.AddDays(-7d); nextReference = reference.AddDays(-7d); break;
+						case Folder.PeriodType.Monthly: reference = reference.AddMonths(-1); nextReference = reference.AddMonths(-1); break;
+						default: throw new NotImplementedException("Period " + folder.Period + " is not yet implemented");
+					}
+
+					String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, reference));
+					String compressedFilename = String.Concat(filename, ".zip");
+					String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, nextReference));
+
+					FileInfo fi = new FileInfo(filename);
+					FileInfo fic = new FileInfo(compressedFilename);
+
+					if (!fi.Exists && !fic.Exists)
+					{
+						if (lastReference - reference > TimeSpan.FromDays(730d))
+						{
+							if (lastReferenceFileInfo != null)
+								Trace.TraceInformation("No more log file found in {0}. Last one was {1}", folder.Directory, lastReferenceFileInfo.Name);
+							else
+								Trace.TraceInformation("No log file found in {0}", folder.Directory);
+							break;
+						}
+					}
+					else
+					{
+						lastReference = reference;
+						lastReferenceFileInfo = fi.Exists ? fi : fic;
+					}
+				}
+				while (true);
+			}
+		}
+
+		private static bool Delete(FileInfo fi)
+		{
+			Console.Out.Write("Deleting {0}... ", fi.FullName);
+			try
+			{
+				//fi.Delete();
+				Trace.TraceInformation("{0} deleted", fi.FullName);
+				Console.Out.WriteLine("OK");
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Trace.TraceError("{0} delete error: {1}", fi.FullName, ex.Message);
+				Trace.TraceError(ex.ToString());
+				Console.Out.WriteLine("ERROR: {0}", ex.Message);
+				return false;
+			}
+		}
+
+		private static bool Compress(FileInfo fi, FileInfo fic)
+		{
+			Console.Out.Write("Compressing {0} to {1}... ", fi.FullName, fic.FullName);
+			try
+			{
+				using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(fic.FullName))
+				{
+					zip.AddFile(fi.FullName);
+					//zip.Save();
+				}
+				Trace.TraceInformation("{0} compressed", fi.FullName);
+
+				fi.Refresh();
+				fic.Refresh();
+
+				//fic.CreationTimeUtc = fi.CreationTimeUtc;
+				//fic.LastWriteTimeUtc = fi.LastWriteTimeUtc;
+				Trace.TraceInformation("{0} dates synchronized from source", fic.FullName);
+
+				Console.Out.WriteLine("OK");
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Trace.TraceError("{0} compression error: {1}", fi.FullName, ex.Message);
+				Trace.TraceError(ex.ToString());
+				Console.Out.WriteLine("ERROR: {0}", ex.Message);
+				return false;
 			}
 		}
 	}
