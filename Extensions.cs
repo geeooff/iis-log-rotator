@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Web.Administration;
+using System.Globalization;
 
 namespace Smartgeek.LogRotator
 {
@@ -22,6 +23,29 @@ namespace Smartgeek.LogRotator
 				return "<empty>";
 
 			return "\"" + attr.Value.ToString() + "\"";
+		}
+
+		public static int GetWeekOfMonth(this DateTime date)
+		{
+			if (date.Month == 1)
+			{
+				return date.GetWeekOfYear();
+			}
+			else
+			{
+				DateTime first = new DateTime(date.Year, date.Month, 1);
+				return date.GetWeekOfYear() - first.GetWeekOfYear() + 1;
+			}
+		}
+
+		public static int GetWeekOfYear(this DateTime date)
+		{
+			DateTimeFormatInfo dtfi = DateTimeFormatInfo.CurrentInfo;
+			return dtfi.Calendar.GetWeekOfYear(
+				date,
+				dtfi.CalendarWeekRule,
+				dtfi.FirstDayOfWeek
+			);
 		}
 	}
 }

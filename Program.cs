@@ -24,7 +24,7 @@ namespace Smartgeek.LogRotator
 		private static void Main(string[] args)
 		{
 			Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
-			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			//Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 			using (ServerManager serverManager = new ServerManager())
 			//using (ServerManager serverManager = ServerManager.OpenRemote("rovms502"))
@@ -152,7 +152,7 @@ namespace Smartgeek.LogRotator
 				folder.Enabled,
 				folder.IsCustomFormat,
 				folder.Directory,
-				folder.FileLogFormat,
+				folder.FilenameFormat,
 				folder.Period,
 				folder.IsLocalTimeRollover,
 				folder.TruncateSize
@@ -187,96 +187,177 @@ namespace Smartgeek.LogRotator
 			DateTime compressAfterDate = settings.Compress ? now.AddDays(settings.CompressAfter) : DateTime.MaxValue;
 			DateTime deleteAfterDate = settings.Delete ? now.AddDays(settings.DeleteAfter) : DateTime.MaxValue;
 
-			// file size rollover
+			DirectoryInfo di = new DirectoryInfo(folder.Directory);
+
+
+			
+			// get all log files
+			List<FileInfo> logFiles = new List<FileInfo>(
+				di.GetFiles("*" + folder.FileExtension)
+			);
+			
+			// get compressed log files
+			List<FileInfo> compressedLogFiles = new List<FileInfo>(
+				di.GetFiles("*" + folder.FileExtension + ".zip")
+			);
+
+			// if rotation is size-based, we order by creation date
 			if (folder.Period == Folder.PeriodType.MaxSize)
 			{
-				for (int index = 1; ; index++)
-				{
-					String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index));
-					String compressedFilename = String.Concat(filename, ".zip");
-					String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index + 1));
-
-					// break on last log file extent
-					// we don't know if IIS is still using it
-					if (!File.Exists(nextFilename))
-					{
-						Console.Out.Write("Skipping last file {0}", filename);
-						Trace.TraceInformation("{0} skipped (last file)", filename);
-						break;
-					}
-
-					FileInfo fi = new FileInfo(filename);
-					FileInfo fic = new FileInfo(compressedFilename);
-
-					if (!fi.Exists && !fic.Exists)
-					{
-						break;
-					}
-
-					// deletion
-					if ((useUTC && fi.CreationTimeUtc > deleteAfterDate) || (!useUTC && fi.CreationTime > deleteAfterDate))
-					{
-						Delete(fi);
-					}
-					if ((useUTC && fic.CreationTimeUtc > deleteAfterDate) || (!useUTC && fic.CreationTime > deleteAfterDate))
-					{
-						Delete(fic);
-					}
-
-					// compression
-					if ((useUTC && fi.CreationTimeUtc > compressAfterDate) || (!useUTC && fi.CreationTime > compressAfterDate))
-					{
-						if (Compress(fi, fic))
-						{
-							Delete(fi);
-						}
-					}
-				}
+				logFiles.Sort(FileInfoCreationTimeCompare);
+				compressedLogFiles.Sort(FileInfoCreationTimeCompare);
 			}
-			// time-based rollover
+			// other naming syntaxes are sortable patterns
 			else
 			{
-				DateTime reference = now, lastReference = reference, nextReference;
-				FileInfo lastReferenceFileInfo = null;
-
-				do
-				{
-					switch (folder.Period)
-					{
-						case Folder.PeriodType.Hourly: reference = reference.AddHours(-1d); nextReference = reference.AddHours(-1d); break;
-						case Folder.PeriodType.Daily: reference = reference.AddDays(-1d); nextReference = reference.AddDays(-1d); break;
-						case Folder.PeriodType.Weekly: reference = reference.AddDays(-7d); nextReference = reference.AddDays(-7d); break;
-						case Folder.PeriodType.Monthly: reference = reference.AddMonths(-1); nextReference = reference.AddMonths(-1); break;
-						default: throw new NotImplementedException("Period " + folder.Period + " is not yet implemented");
-					}
-
-					String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, reference));
-					String compressedFilename = String.Concat(filename, ".zip");
-					String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, nextReference));
-
-					FileInfo fi = new FileInfo(filename);
-					FileInfo fic = new FileInfo(compressedFilename);
-
-					if (!fi.Exists && !fic.Exists)
-					{
-						if (lastReference - reference > TimeSpan.FromDays(730d))
-						{
-							if (lastReferenceFileInfo != null)
-								Trace.TraceInformation("No more log file found in {0}. Last one was {1}", folder.Directory, lastReferenceFileInfo.Name);
-							else
-								Trace.TraceInformation("No log file found in {0}", folder.Directory);
-							break;
-						}
-					}
-					else
-					{
-						lastReference = reference;
-						lastReferenceFileInfo = fi.Exists ? fi : fic;
-					}
-				}
-				while (true);
+				logFiles.Sort(FileInfoNameCompare);
+				compressedLogFiles.Sort(FileInfoNameCompare);
 			}
 		}
+
+		private static int FileInfoNameCompare(FileInfo x, FileInfo y)
+		{
+			return StringComparer.Ordinal.Compare(x.Name, y.Name);
+		}
+
+		private static int FileInfoCreationTimeCompare(FileInfo x, FileInfo y)
+		{
+			return DateTime.Compare(x.CreationTime, y.CreationTime);
+		}
+
+		// TODO predictive way of finding log files
+		//private static void ProcessFolder2(Folder folder)
+		//{
+		//    Debug.WriteLine(
+		//        "Folder: Enabled={0}, IsCustomFormat={1}, Directory={2}, FileLogFormat={3}, Period={4}, IsLocalTimeRollover={5}, TruncateSize={6}",
+		//        folder.Enabled,
+		//        folder.IsCustomFormat,
+		//        folder.Directory,
+		//        folder.FileLogFormat,
+		//        folder.Period,
+		//        folder.IsLocalTimeRollover,
+		//        folder.TruncateSize
+		//    );
+
+		//    if (!folder.Enabled)
+		//    {
+		//        Console.Out.WriteLine("Skipping folder {0} because logging is disabled", folder.Directory);
+		//        return;
+		//    }
+
+		//    if (folder.IsCustomFormat)
+		//    {
+		//        Console.Out.WriteLine("Skipping folder {0} because custom logging is used", folder.Directory);
+		//        return;
+		//    }
+
+		//    // specific site rotation settings or default settings
+		//    RotationSettingsElement settings;
+		//    if (folder.SiteID.HasValue)
+		//    {
+		//        settings = RuntimeConfig.Rotation.GetSiteSettingsOrDefault(folder.SiteID.Value);
+		//    }
+		//    else
+		//    {
+		//        settings = RuntimeConfig.Rotation.DefaultSettings;
+		//    }
+
+		//    // datetime references
+		//    bool useUTC = !folder.IsLocalTimeRollover;
+		//    DateTime now = useUTC ? DateTime.Now.ToUniversalTime() : DateTime.Now;
+		//    DateTime compressAfterDate = settings.Compress ? now.AddDays(settings.CompressAfter) : DateTime.MaxValue;
+		//    DateTime deleteAfterDate = settings.Delete ? now.AddDays(settings.DeleteAfter) : DateTime.MaxValue;
+
+		//    // file size rollover
+		//    if (folder.Period == Folder.PeriodType.MaxSize)
+		//    {
+		//        for (int index = 1; ; index++)
+		//        {
+		//            String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index));
+		//            String compressedFilename = String.Concat(filename, ".zip");
+		//            String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index + 1));
+
+		//            // break on last log file extent
+		//            // we don't know if IIS is still using it
+		//            if (!File.Exists(nextFilename))
+		//            {
+		//                Console.Out.Write("Skipping last file {0}", filename);
+		//                Trace.TraceInformation("{0} skipped (last file)", filename);
+		//                break;
+		//            }
+
+		//            FileInfo fi = new FileInfo(filename);
+		//            FileInfo fic = new FileInfo(compressedFilename);
+
+		//            if (!fi.Exists && !fic.Exists)
+		//            {
+		//                break;
+		//            }
+
+		//            // deletion
+		//            if ((useUTC && fi.CreationTimeUtc > deleteAfterDate) || (!useUTC && fi.CreationTime > deleteAfterDate))
+		//            {
+		//                Delete(fi);
+		//            }
+		//            if ((useUTC && fic.CreationTimeUtc > deleteAfterDate) || (!useUTC && fic.CreationTime > deleteAfterDate))
+		//            {
+		//                Delete(fic);
+		//            }
+
+		//            // compression
+		//            if ((useUTC && fi.CreationTimeUtc > compressAfterDate) || (!useUTC && fi.CreationTime > compressAfterDate))
+		//            {
+		//                if (Compress(fi, fic))
+		//                {
+		//                    Delete(fi);
+		//                }
+		//            }
+		//        }
+		//    }
+		//    // time-based rollover
+		//    else
+		//    {
+		//        DateTime reference = now, lastReference = reference, nextReference;
+		//        FileInfo lastReferenceFileInfo = null;
+
+		//        do
+		//        {
+		//            switch (folder.Period)
+		//            {
+		//                case Folder.PeriodType.Hourly: reference = reference.AddHours(-1d); nextReference = reference.AddHours(-1d); break;
+		//                case Folder.PeriodType.Daily: reference = reference.AddDays(-1d); nextReference = reference.AddDays(-1d); break;
+		//                case Folder.PeriodType.Weekly: reference = reference.AddDays(-7d); nextReference = reference.AddDays(-7d); break;
+		//                case Folder.PeriodType.Monthly: reference = reference.AddMonths(-1); nextReference = reference.AddMonths(-1); break;
+		//                default: throw new NotImplementedException("Period " + folder.Period + " is not yet implemented");
+		//            }
+
+		//            String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, reference, reference.GetWeekOfMonth()));
+		//            String compressedFilename = String.Concat(filename, ".zip");
+		//            String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, nextReference, nextReference.GetWeekOfMonth()));
+
+		//            FileInfo fi = new FileInfo(filename);
+		//            FileInfo fic = new FileInfo(compressedFilename);
+
+		//            if (!fi.Exists && !fic.Exists)
+		//            {
+		//                if (lastReference - reference > TimeSpan.FromDays(730d))
+		//                {
+		//                    if (lastReferenceFileInfo != null)
+		//                        Trace.TraceInformation("No more log file found in {0}. Last one was {1}", folder.Directory, lastReferenceFileInfo.Name);
+		//                    else
+		//                        Trace.TraceInformation("No log file found in {0}", folder.Directory);
+		//                    break;
+		//                }
+		//            }
+		//            else
+		//            {
+		//                lastReference = reference;
+		//                lastReferenceFileInfo = fi.Exists ? fi : fic;
+		//            }
+		//        }
+		//        while (true);
+		//    }
+		//}
 
 		private static bool Delete(FileInfo fi)
 		{
