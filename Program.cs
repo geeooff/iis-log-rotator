@@ -24,7 +24,7 @@ namespace Smartgeek.LogRotator
 		private static void Main(string[] args)
 		{
 			Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
-			//Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 			using (ServerManager serverManager = new ServerManager())
 			//using (ServerManager serverManager = ServerManager.OpenRemote("rovms502"))
@@ -147,26 +147,22 @@ namespace Smartgeek.LogRotator
 
 		private static void ProcessFolder(Folder folder)
 		{
-			Debug.WriteLine(
-				"Folder: Enabled={0}, IsCustomFormat={1}, Directory={2}, FileLogFormat={3}, Period={4}, IsLocalTimeRollover={5}, TruncateSize={6}",
-				folder.Enabled,
-				folder.IsCustomFormat,
-				folder.Directory,
-				folder.FilenameFormat,
-				folder.Period,
-				folder.IsLocalTimeRollover,
-				folder.TruncateSize
-			);
-
 			if (!folder.Enabled)
 			{
 				Console.Out.WriteLine("Skipping folder {0} because logging is disabled", folder.Directory);
 				return;
 			}
 
-			if (folder.IsCustomFormat)
+			if (folder.LogFormat == Folder.LogFormatType.Custom)
 			{
 				Console.Out.WriteLine("Skipping folder {0} because custom logging is used", folder.Directory);
+				return;
+			}
+
+			DirectoryInfo di = new DirectoryInfo(folder.Directory);
+			if (!di.Exists)
+			{
+				Console.Out.WriteLine("Skipping inexistant folder {0}", folder.Directory);
 				return;
 			}
 			
@@ -187,10 +183,6 @@ namespace Smartgeek.LogRotator
 			DateTime compressAfterDate = settings.Compress ? now.AddDays(settings.CompressAfter) : DateTime.MaxValue;
 			DateTime deleteAfterDate = settings.Delete ? now.AddDays(settings.DeleteAfter) : DateTime.MaxValue;
 
-			DirectoryInfo di = new DirectoryInfo(folder.Directory);
-
-
-			
 			// get all log files
 			List<FileInfo> logFiles = new List<FileInfo>(
 				di.GetFiles("*" + folder.FileExtension)
@@ -201,28 +193,11 @@ namespace Smartgeek.LogRotator
 				di.GetFiles("*" + folder.FileExtension + ".zip")
 			);
 
-			// if rotation is size-based, we order by creation date
-			if (folder.Period == Folder.PeriodType.MaxSize)
-			{
-				logFiles.Sort(FileInfoCreationTimeCompare);
-				compressedLogFiles.Sort(FileInfoCreationTimeCompare);
-			}
-			// other naming syntaxes are sortable patterns
-			else
-			{
-				logFiles.Sort(FileInfoNameCompare);
-				compressedLogFiles.Sort(FileInfoNameCompare);
-			}
-		}
+			FileLogComparer comparer = new FileLogComparer(folder);
 
-		private static int FileInfoNameCompare(FileInfo x, FileInfo y)
-		{
-			return StringComparer.Ordinal.Compare(x.Name, y.Name);
-		}
-
-		private static int FileInfoCreationTimeCompare(FileInfo x, FileInfo y)
-		{
-			return DateTime.Compare(x.CreationTime, y.CreationTime);
+			// sorting
+			logFiles.Sort(comparer);
+			compressedLogFiles.Sort(comparer);
 		}
 
 		// TODO predictive way of finding log files

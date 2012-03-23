@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Web.Administration;
 using System.Globalization;
+using System.IO;
 
 namespace Smartgeek.LogRotator
 {
@@ -46,6 +47,25 @@ namespace Smartgeek.LogRotator
 				dtfi.CalendarWeekRule,
 				dtfi.FirstDayOfWeek
 			);
+		}
+
+		public static DateTime GetIisLogDate(this FileInfo fi, Folder folder)
+		{
+			DateTime date;
+			if (folder.IsChildLog(fi, out date))
+			{
+				return date;
+			}
+			return DateTime.MaxValue;
+		}
+
+		public static String StripeUtf8Prefix(this String str)
+		{
+			if (str.StartsWith("u_", StringComparison.Ordinal))
+			{
+				return str.Substring(2);
+			}
+			return str;
 		}
 	}
 }
