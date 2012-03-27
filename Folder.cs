@@ -162,7 +162,7 @@ namespace Smartgeek.LogRotator
 			if (logFormat != IisLogFormatType.Custom)
 			{
 				directory = Path.Combine(
-					dir,
+					Environment.ExpandEnvironmentVariables(dir),
 					subdir
 				);
 				fileLogFormat = String.Concat(

@@ -50,6 +50,7 @@ namespace Smartgeek.LogRotator
 			{
 				Console.Out.WriteLine("Reading IIS 6.x configuration...");
 				Trace.TraceInformation("Reading IIS 6.x configuration...");
+				// IIS 6.0 is quite the same as IIS 5.0, so please don't blame me for this naming ^^
 				AddIis6xFolders(folders);
 			}
 			else
@@ -445,6 +446,12 @@ namespace Smartgeek.LogRotator
 					.Where(f => f.IsChild)
 					.OrderBy(f => f.Date)
 			);
+
+			if (logFiles.Count > 0)
+			{
+				// it's generaly safer to skip the latest log file because we don't know if IIS is still using it
+				logFiles.RemoveAt(logFiles.Count - 1);
+			}
 
 			// get compressed log files
 			List<FileLogInfo> compressedLogFiles = new List<FileLogInfo>(

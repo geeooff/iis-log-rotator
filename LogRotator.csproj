@@ -189,10 +189,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /I /Y $(OutDir)* \\rovms502\c$\Scripts\LogRotator
-xcopy /I /Y $(OutDir)* \\roweb104\c$\Scripts\LogRotator
-xcopy /I /Y $(OutDir)* \\roweb105\c$\Scripts\LogRotator
-xcopy /I /Y $(OutDir)* \\POWKS242\c$\Scripts\LogRotator</PostBuildEvent>
+    <PostBuildEvent>xcopy /I /Y $(OutDir)* \\rovms502\c$\Scripts\LogRotator</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
