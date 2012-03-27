@@ -68,7 +68,7 @@ namespace Smartgeek.LogRotator.Configuration
 			set { this[s_propSitesSettings] = value; }
 		}
 
-		public RotationSettingsElement GetSiteSettingsOrDefault(long id)
+		public RotationSettingsElement GetSiteSettingsOrDefault(String id)
 		{
 			SiteRotationSettingsElement siteSettings = this.SitesSettings
 				.Cast<SiteRotationSettingsElement>()

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Globalization;
+using System.Diagnostics;
+using System.IO;
+using System.DirectoryServices;
 
 using Microsoft.Web.Administration;
 using Smartgeek.LogRotator.Configuration;
-using System.Diagnostics;
-using System.IO;
 
 namespace Smartgeek.LogRotator
 {
@@ -16,18 +16,279 @@ namespace Smartgeek.LogRotator
 	{
 		private const int MaxMissingCount = 100;
 
-		private static List<Folder> s_folders = new List<Folder>();
-		private static List<FileInfo> s_files = new List<FileInfo>();
-		private static List<FileInfo> s_filesToCompress = new List<FileInfo>();
-		private static List<FileInfo> s_filesToDelete = new List<FileInfo>();
-
 		private static void Main(string[] args)
 		{
 			Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+			{
+				Console.Error.WriteLine("Must be a Windows NT platform");
+				Trace.TraceWarning("Abort: PlatformID = {0}", Environment.OSVersion.Platform);
+				Environment.Exit(-1);
+			}
+
+			List<Folder> folders = new List<Folder>();
+
+			if (Environment.OSVersion.Version.Major == 6)
+			{
+				Console.Out.WriteLine("Reading IIS 6.0 configuration...");
+				Trace.TraceInformation("Reading IIS 6.0 configuration...");
+				AddIis6xFolders(folders, skipHttp: true, skipFtp: true);
+
+				Console.Out.WriteLine("Reading IIS 7.x configuration...");
+				Trace.TraceInformation("Reading IIS 7.x configuration...");
+				AddIis7xFolders(folders);
+			}
+			else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 1)
+			{
+				Console.Out.WriteLine("Reading IIS 5.x configuration...");
+				Trace.TraceInformation("Reading IIS 5.x configuration...");
+				AddIis6xFolders(folders);
+			}
+			else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 2)
+			{
+				Console.Out.WriteLine("Reading IIS 6.x configuration...");
+				Trace.TraceInformation("Reading IIS 6.x configuration...");
+				AddIis6xFolders(folders);
+			}
+			else
+			{
+				Console.Error.WriteLine("Must be a Windows NT 5.1 or newer");
+				Trace.TraceWarning("Abort: OSVersion = {0}", Environment.OSVersion);
+				Environment.Exit(-1);
+			}
+
+			folders.ForEach(ProcessFolder);
+		}
+
+		private static void AddIis6xFolders(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
+		{
+			using (DirectoryEntry lm = new DirectoryEntry(@"IIS://localhost"))
+			{
+				if (!skipHttp)
+				{
+					#region /LM/W3SVC
+					DirectoryEntry w3svc = null;
+
+					try
+					{
+						w3svc = lm.Children.Find("W3SVC", "IisWebService");
+						Trace.TraceInformation("W3SVC feature found");
+						Console.Out.WriteLine("W3SVC feature found");
+					}
+					catch (Exception ex)
+					{
+						Trace.TraceInformation("W3SVC feature not found ({0})", ex.Message);
+						Console.Out.WriteLine("W3SVC feature not found");
+					}
+
+					if (w3svc != null)
+					{
+						try 
+						{
+							bool isCentralW3C = false, isCentralBinary = false, isUTF8 = false;
+
+							// NT 5.2 or newer features
+							if (Environment.OSVersion.Version >= new Version(5, 2))
+							{
+								// central log file is available starting with NT 5.2 SP1
+								if (Environment.OSVersion.Version > new Version(5, 2)
+									|| Environment.OSVersion.Version == new Version(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack))
+								{
+									isCentralW3C = (bool)w3svc.Properties["CentralW3CLoggingEnabled"].Value;
+									isCentralBinary = (bool)w3svc.Properties["CentralBinaryLoggingEnabled"].Value;
+								}
+
+								// UTF-8 encoding is available starting with NT 5.2 RTM
+								isUTF8 = (bool)w3svc.Properties["LogInUTF8"].Value;
+							}
+
+							if (isCentralW3C || isCentralBinary)
+							{
+								folders.Add(Folder.Create(
+									w3svc,
+									IisServiceType.W3SVC,
+									isUTF8,
+									isCentralW3C: isCentralW3C,
+									isCentralBinary: isCentralBinary
+								));
+							}
+							else
+							{
+								foreach (DirectoryEntry site in w3svc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsWebServer"))
+								{
+									long siteId = Int64.Parse(site.Name);
+
+									folders.Add(Folder.Create(
+										site,
+										IisServiceType.W3SVC,
+										isUTF8,
+										siteId: siteId
+									));
+
+									site.Close();
+								}
+							}
+
+							w3svc.Close();
+						}
+						finally
+						{
+							w3svc.Dispose();
+						}
+					}
+					#endregion
+				}
+
+				if (!skipFtp)
+				{
+					#region /LM/MSFTPSVC
+					DirectoryEntry msftpsvc = null;
+
+					try
+					{
+						msftpsvc = lm.Children.Find("MSFTPSVC", "IisFtpService");
+						Trace.TraceInformation("MSFTPSVC feature found");
+						Console.Out.WriteLine("MSFTPSVC feature found");
+					}
+					catch (Exception ex)
+					{
+						Trace.TraceInformation("MSFTPSVC feature not found ({0})", ex.Message);
+						Console.Out.WriteLine("MSFTPSVC feature not found");
+					}
+
+					if (msftpsvc != null)
+					{
+						try
+						{
+							// server-level FTP log files encoding
+							bool isFtpUTF8 = (bool)msftpsvc.Properties["FtpLogInUtf8"].Value;
+
+							foreach (DirectoryEntry site in msftpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsFtpServer"))
+							{
+								long siteId = Int64.Parse(site.Name);
+
+								// site-level FTP log files encoding
+								bool isFtpSiteUTF8 = (bool)site.GetPropertyValue<bool>("FtpLogInUtf8", isFtpUTF8);
+
+								folders.Add(Folder.Create(
+									site,
+									IisServiceType.MSFTPSVC,
+									isFtpSiteUTF8,
+									siteId: siteId
+								));
+
+								site.Close();
+							}
+
+							msftpsvc.Close();
+						}
+						finally
+						{
+							msftpsvc.Dispose();
+						} 
+					}
+					#endregion
+				}
+
+				if (!skipSmtp)
+				{
+					#region /LM/SMTPSVC
+					DirectoryEntry smtpsvc = null;
+
+					try
+					{
+						smtpsvc = lm.Children.Find("SMTPSVC", "IIsSmtpService");
+						Trace.TraceInformation("SMTPSVC feature found");
+						Console.Out.WriteLine("SMTPSVC feature found");
+					}
+					catch (Exception ex)
+					{
+						Trace.TraceInformation("SMTPSVC feature not found ({0})", ex.Message);
+						Console.Out.WriteLine("SMTPSVC feature not found");
+					}
+
+					if (smtpsvc != null)
+					{
+						try
+						{
+							foreach (DirectoryEntry site in smtpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsSmtpServer"))
+							{
+								long siteId = Int64.Parse(site.Name);
+
+								folders.Add(Folder.Create(
+									site,
+									IisServiceType.SMTPSVC,
+									false,
+									siteId: siteId
+								));
+
+								site.Close();
+							}
+
+							smtpsvc.Close();
+						}
+						finally
+						{
+							smtpsvc.Dispose();
+						}
+					}
+					#endregion
+				}
+
+				if (!skipNntp)
+				{
+					#region /LM/NNTPSVC
+					DirectoryEntry nntpsvc = null;
+
+					try
+					{
+						nntpsvc = lm.Children.Find("NNTPSVC", "IIsNntpService");
+						Trace.TraceInformation("NNTPSVC feature found");
+						Console.Out.WriteLine("NNTPSVC feature found");
+					}
+					catch (Exception ex)
+					{
+						Trace.TraceInformation("NNTPSVC feature not found ({0})", ex.Message);
+						Console.Out.WriteLine("NNTPSVC feature not found");
+					}
+
+					if (nntpsvc != null)
+					{
+						try 
+						{
+							foreach (DirectoryEntry site in nntpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsNntpServer"))
+							{
+								long siteId = Int64.Parse(site.Name);
+
+								folders.Add(Folder.Create(
+									site,
+									IisServiceType.NNTPSVC,
+									false,
+									siteId: siteId
+								));
+
+								site.Close();
+							}
+		    
+							nntpsvc.Close();
+						}
+						finally
+						{
+							nntpsvc.Dispose();
+						}
+					}
+					#endregion
+				}
+
+				lm.Close();
+			}
+		}
+
+		private static void AddIis7xFolders(List<Folder> folders)
+		{
 			using (ServerManager serverManager = new ServerManager())
-			//using (ServerManager serverManager = ServerManager.OpenRemote("rovms502"))
 			{
 				// applicationHost.config
 				Microsoft.Web.Administration.Configuration config = serverManager.GetApplicationHostConfiguration();
@@ -49,7 +310,7 @@ namespace Smartgeek.LogRotator
 				}
 
 				// server-wide HTTP log files encoding
-				bool isUTF8 = (bool)logSection.GetAttributeValue("logInUTF8"); 
+				bool isUTF8 = (bool)logSection.GetAttributeValue("logInUTF8");
 				#endregion
 
 				#region system.ftpServer/log
@@ -67,14 +328,14 @@ namespace Smartgeek.LogRotator
 				}
 
 				// server-wide FTP log files encoding
-				bool isFtpServerUTF8 = (bool)ftpServerLogSection.GetAttributeValue("logInUTF8"); 
+				bool isFtpServerUTF8 = (bool)ftpServerLogSection.GetAttributeValue("logInUTF8");
 				#endregion
 
 				if (isCentralW3C || isCentralBinary)
 				{
-					s_folders.Add(Folder.Create(
+					folders.Add(Folder.Create(
 						centralLogFile,
-						Folder.IisServiceType.W3SVC,
+						IisServiceType.W3SVC,
 						isUTF8,
 						isCentralW3C: isCentralW3C,
 						isCentralBinary: isCentralBinary
@@ -83,9 +344,9 @@ namespace Smartgeek.LogRotator
 
 				if (isFtpServerCentralW3C)
 				{
-					s_folders.Add(Folder.Create(
+					folders.Add(Folder.Create(
 						ftpServerCentralLogFile,
-						Folder.IisServiceType.FTPSVC,
+						IisServiceType.FTPSVC,
 						isFtpServerUTF8,
 						isCentralW3C: isFtpServerCentralW3C
 					));
@@ -101,7 +362,7 @@ namespace Smartgeek.LogRotator
 					{
 						long siteId = (long)site["id"];
 						ConfigurationElementCollection bindingsCollection = site.GetCollection("bindings");
-						
+
 						// any http/https binding ?
 						bool isWebSite = bindingsCollection.Any(binding =>
 						{
@@ -112,9 +373,9 @@ namespace Smartgeek.LogRotator
 						if (isWebSite && !(isCentralW3C || isCentralBinary))
 						{
 							ConfigurationElement logFile = site.GetChildElement("logFile");
-							s_folders.Add(Folder.Create(
+							folders.Add(Folder.Create(
 								logFile,
-								Folder.IisServiceType.W3SVC,
+								IisServiceType.W3SVC,
 								isUTF8,
 								siteId: siteId
 							));
@@ -131,9 +392,9 @@ namespace Smartgeek.LogRotator
 						{
 							ConfigurationElement ftpServer = site.GetChildElement("ftpServer");
 							ConfigurationElement ftpServerLogFile = ftpServer.GetChildElement("logFile");
-							s_folders.Add(Folder.Create(
+							folders.Add(Folder.Create(
 								ftpServerLogFile,
-								Folder.IisServiceType.FTPSVC,
+								IisServiceType.FTPSVC,
 								isFtpServerUTF8,
 								siteId: siteId
 							));
@@ -141,20 +402,20 @@ namespace Smartgeek.LogRotator
 					}
 				}
 			}
-
-			s_folders.ForEach(ProcessFolder);
 		}
 
 		private static void ProcessFolder(Folder folder)
 		{
 			if (!folder.Enabled)
 			{
+				Trace.TraceInformation("Skipping folder {0} because logging is disabled", folder.Directory);
 				Console.Out.WriteLine("Skipping folder {0} because logging is disabled", folder.Directory);
 				return;
 			}
 
-			if (folder.LogFormat == Folder.LogFormatType.Custom)
+			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
+				Trace.TraceInformation("Skipping folder {0} because custom logging is used", folder.Directory);
 				Console.Out.WriteLine("Skipping folder {0} because custom logging is used", folder.Directory);
 				return;
 			}
@@ -162,42 +423,112 @@ namespace Smartgeek.LogRotator
 			DirectoryInfo di = new DirectoryInfo(folder.Directory);
 			if (!di.Exists)
 			{
+				Trace.TraceInformation("Skipping inexistant folder {0}", folder.Directory);
 				Console.Out.WriteLine("Skipping inexistant folder {0}", folder.Directory);
 				return;
 			}
 			
-			// specific site rotation settings or default settings
-			RotationSettingsElement settings;
-			if (folder.SiteID.HasValue)
+			// specific folder rotation settings or default settings
+			RotationSettingsElement settings = RuntimeConfig.Rotation.GetSiteSettingsOrDefault(folder.ID);
+
+			if (!settings.Compress && !settings.Delete)
 			{
-				settings = RuntimeConfig.Rotation.GetSiteSettingsOrDefault(folder.SiteID.Value);
+				Trace.TraceInformation("Skipping folder {0} because compression and deletion are disabled", folder.Directory);
+				Console.Out.WriteLine("Skipping folder {0} because compression and deletion are disabled", folder.Directory);
+				return;
 			}
-			else
-			{
-				settings = RuntimeConfig.Rotation.DefaultSettings;
-			}
+
+			// get all log files
+			List<FileLogInfo> logFiles = new List<FileLogInfo>(
+				di.GetFiles("*" + folder.FileExtension)
+					.Select(f => new FileLogInfo(f, folder))
+					.Where(f => f.IsChild)
+					.OrderBy(f => f.Date)
+			);
+
+			// get compressed log files
+			List<FileLogInfo> compressedLogFiles = new List<FileLogInfo>(
+				di.GetFiles("*" + folder.FileExtension + ".zip")
+					.Select(f => new FileLogInfo(f, folder))
+					.Where(f => f.IsChild)
+					.OrderBy(f => f.Date)
+			);
 
 			// datetime references
 			bool useUTC = !folder.IsLocalTimeRollover;
 			DateTime now = useUTC ? DateTime.Now.ToUniversalTime() : DateTime.Now;
-			DateTime compressAfterDate = settings.Compress ? now.AddDays(settings.CompressAfter) : DateTime.MaxValue;
-			DateTime deleteAfterDate = settings.Delete ? now.AddDays(settings.DeleteAfter) : DateTime.MaxValue;
 
-			// get all log files
-			List<FileInfo> logFiles = new List<FileInfo>(
-				di.GetFiles("*" + folder.FileExtension)
-			);
-			
-			// get compressed log files
-			List<FileInfo> compressedLogFiles = new List<FileInfo>(
-				di.GetFiles("*" + folder.FileExtension + ".zip")
-			);
+			// file logs deletion
+			if (settings.Delete)
+			{
+				DateTime deleteBeforeDate = now.AddDays(settings.DeleteAfter * -1d);
 
-			FileLogComparer comparer = new FileLogComparer(folder);
+				// filter
+				List<FileLogInfo> logFilesToDelete = new List<FileLogInfo>(
+					logFiles.Union(compressedLogFiles).Where(f => f.File.Exists && f.Date < deleteBeforeDate)
+				);
 
-			// sorting
-			logFiles.Sort(comparer);
-			compressedLogFiles.Sort(comparer);
+				if (logFilesToDelete.Count > 0)
+				{
+					Trace.TraceInformation("Folder {0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
+					Console.Out.WriteLine("Folder {0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
+
+					int deletedCount = 0;
+
+					logFilesToDelete.ForEach(delegate(FileLogInfo fileLog)
+					{
+						if (Delete(fileLog))
+							deletedCount++;
+					});
+
+					Trace.TraceInformation("Folder {0}: {1} log files deleted", folder.Directory, deletedCount);
+					Console.Out.WriteLine("Folder {0}: {1} log files deleted", folder.Directory, deletedCount);
+				}
+				else
+				{
+					Trace.TraceInformation("Folder {0}: no file to delete", folder.Directory);
+					Console.Out.WriteLine("Folder {0}: no file to delete", folder.Directory);
+				}
+			}
+
+			// file logs compression
+			if (settings.Compress)
+			{
+				DateTime compressBeforeDate = now.AddDays(settings.CompressAfter * -1d);
+
+				// filter
+				List<FileLogInfo> logFilesToCompress = new List<FileLogInfo>(
+					logFiles.Where(f => f.File.Exists && f.Date < compressBeforeDate)
+				);
+
+				if (logFilesToCompress.Count > 0)
+				{
+					Trace.TraceInformation("Folder {0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
+					Console.Out.WriteLine("Folder {0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
+
+					int compressedCount = 0, deletedCount = 0;
+
+					logFilesToCompress.ForEach(delegate(FileLogInfo fileLog)
+					{
+						if (Compress(fileLog))
+						{
+							compressedCount++;
+							if (Delete(fileLog))
+							{
+								deletedCount++;
+							}
+						}
+					});
+
+					Trace.TraceInformation("Folder {0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
+					Console.Out.WriteLine("Folder {0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
+				}
+				else
+				{
+					Trace.TraceInformation("Folder {0}: no file to compress", folder.Directory);
+					Console.Out.WriteLine("Folder {0}: no file to compress", folder.Directory);
+				}
+			}
 		}
 
 		// TODO predictive way of finding log files
@@ -334,50 +665,60 @@ namespace Smartgeek.LogRotator
 		//    }
 		//}
 
-		private static bool Delete(FileInfo fi)
+		private static bool Delete(FileLogInfo fileLog)
 		{
-			Console.Out.Write("Deleting {0}... ", fi.FullName);
+			Console.Out.Write("Deleting {0}... ", fileLog.File.FullName);
 			try
 			{
-				//fi.Delete();
-				Trace.TraceInformation("{0} deleted", fi.FullName);
+				fileLog.File.Delete();
+				fileLog.File.Refresh();
+				Trace.TraceInformation("{0} deleted", fileLog.File.FullName);
 				Console.Out.WriteLine("OK");
 				return true;
 			}
 			catch (Exception ex)
 			{
-				Trace.TraceError("{0} delete error: {1}", fi.FullName, ex.Message);
+				Trace.TraceError("{0} delete error: {1}", fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
 				Console.Out.WriteLine("ERROR: {0}", ex.Message);
 				return false;
 			}
 		}
 
-		private static bool Compress(FileInfo fi, FileInfo fic)
+		private static bool Compress(FileLogInfo fileLog)
 		{
-			Console.Out.Write("Compressing {0} to {1}... ", fi.FullName, fic.FullName);
+			FileInfo compressedFileInfo = new FileInfo(String.Concat(fileLog.File.FullName, ".zip"));
+			Console.Out.Write("Compressing {0} to {1}... ", fileLog.File.FullName, compressedFileInfo.Name);
 			try
 			{
-				using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(fic.FullName))
+				if (compressedFileInfo.Exists)
 				{
-					zip.AddFile(fi.FullName);
-					//zip.Save();
+					Trace.TraceInformation("{0} deleted (overwrite)", fileLog.File.FullName);
+					compressedFileInfo.Delete();
 				}
-				Trace.TraceInformation("{0} compressed", fi.FullName);
 
-				fi.Refresh();
-				fic.Refresh();
+				using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(compressedFileInfo.FullName))
+				{
+					zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
+					zip.AddFile(fileLog.File.FullName, String.Empty);
+					zip.Save();
+				}
+				Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
 
-				//fic.CreationTimeUtc = fi.CreationTimeUtc;
-				//fic.LastWriteTimeUtc = fi.LastWriteTimeUtc;
-				Trace.TraceInformation("{0} dates synchronized from source", fic.FullName);
+				compressedFileInfo.Refresh();
 
+				if (compressedFileInfo.Exists)
+				{
+					compressedFileInfo.CreationTimeUtc = fileLog.File.CreationTimeUtc;
+					compressedFileInfo.LastWriteTimeUtc = fileLog.File.LastWriteTimeUtc;
+				}
+				
 				Console.Out.WriteLine("OK");
 				return true;
 			}
 			catch (Exception ex)
 			{
-				Trace.TraceError("{0} compression error: {1}", fi.FullName, ex.Message);
+				Trace.TraceError("{0} compression error: {1}", fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
 				Console.Out.WriteLine("ERROR: {0}", ex.Message);
 				return false;

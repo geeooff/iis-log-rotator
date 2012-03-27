@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Web.Administration;
 using System.Globalization;
 using System.IO;
+using System.DirectoryServices;
 
 namespace Smartgeek.LogRotator
 {
@@ -49,16 +50,6 @@ namespace Smartgeek.LogRotator
 			);
 		}
 
-		public static DateTime GetIisLogDate(this FileInfo fi, Folder folder)
-		{
-			DateTime date;
-			if (folder.IsChildLog(fi, out date))
-			{
-				return date;
-			}
-			return DateTime.MaxValue;
-		}
-
 		public static String StripeUtf8Prefix(this String str)
 		{
 			if (str.StartsWith("u_", StringComparison.Ordinal))
@@ -66,6 +57,20 @@ namespace Smartgeek.LogRotator
 				return str.Substring(2);
 			}
 			return str;
+		}
+
+		public static T GetPropertyValue<T>(this DirectoryEntry entry, String propertyName)
+		{
+			return (T)entry.Properties[propertyName].Value;
+		}
+
+		public static T GetPropertyValue<T>(this DirectoryEntry entry, String propertyName, T defaultValue)
+		{
+			if (entry.Properties.Contains(propertyName))
+			{
+				return (T)entry.Properties[propertyName].Value;
+			}
+			return defaultValue;
 		}
 	}
 }

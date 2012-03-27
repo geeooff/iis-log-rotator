@@ -15,8 +15,8 @@ namespace Smartgeek.LogRotator.Configuration
 		{
 			s_propID = new ConfigurationProperty(
 				"id",
-				typeof(long),
-				0L,
+				typeof(String),
+				null,
 				ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey
 			);
 
@@ -35,9 +35,9 @@ namespace Smartgeek.LogRotator.Configuration
 			get { return s_properties; }
 		}
 
-		public long ID
+		public String ID
 		{
-			get { return ((long)(this[s_propID])); }
+			get { return ((String)(this[s_propID])); }
 			set { this[s_propID] = value; }
 		}
 	}

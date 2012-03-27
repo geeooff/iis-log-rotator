@@ -6,9 +6,9 @@ using Smartgeek.Configuration;
 
 namespace Smartgeek.LogRotator.Configuration
 {
-	public class SiteRotationSettingsElementCollection : ConfigurationElementCollection<SiteRotationSettingsElement, long>
+	public class SiteRotationSettingsElementCollection : ConfigurationElementCollection<SiteRotationSettingsElement, String>
 	{
-		protected override long GetElementKey(SiteRotationSettingsElement element)
+		protected override String GetElementKey(SiteRotationSettingsElement element)
 		{
 			return element.ID;
 		}

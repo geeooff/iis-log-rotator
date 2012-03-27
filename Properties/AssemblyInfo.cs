@@ -7,7 +7,7 @@ using System.Resources;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("LogRotator")]
-[assembly: AssemblyDescription("IIS 7.x Log Rotation Robot")]
+[assembly: AssemblyDescription("IIS Log Rotation Robot")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("smartgeek.net")]
 [assembly: AssemblyProduct("LogRotator")]

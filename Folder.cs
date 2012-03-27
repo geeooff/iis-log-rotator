@@ -7,252 +7,159 @@ using System.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.DirectoryServices;
 
 namespace Smartgeek.LogRotator
 {
+	[DebuggerDisplay("ID = {ID}, Enabled = {Enabled}, FilenameFormat = {FilenameFormat}, Directory = {Directory}")]
 	public class Folder
 	{
-		public enum IisServiceType
-		{
-			W3SVC,
-			FTPSVC,
-			SMTPSVC
-		}
-
-		public enum PeriodType
-		{
-			MaxSize = 0,
-			Daily = 1,
-			Weekly = 2,
-			Monthly = 3,
-			Hourly = 4
-		}
-
-		public enum LogFormatType
-		{
-			CentralBinary = -2,
-			CentralW3C = -1,
-			IIS = 0,
-			NCSA = 1,
-			W3C = 2,
-			Custom = 3
-		}
-
-		private static readonly Regex FilenameFormatRegex;
-
-		static Folder()
-		{
-			FilenameFormatRegex = new Regex(
-				@"^(?<utf8prefix>u_)?(?:(?<dateBased>(?<format>in|nc|ex|ra)(?<year>\d{2})(?<month>\d{2})(?<dayOrWeek>\d{2})?(?<hour>\d{2})?)|(?<sizeBased>(?<format>inetsv|ncsa|extend|raw)(?<index>\d+)))(?<ext>\.log|\.ibl)(?<zip>\.zip)?$",
-				RegexOptions.Compiled
-			);
-		}
+		private static readonly Guid IisLogModuleId = new Guid("{FF160657-DE82-11CF-BC0A-00AA006111E0}");
+		private static readonly Guid NcsaLogModuleId = new Guid("{FF16065F-DE82-11CF-BC0A-00AA006111E0}");
+		private static readonly Guid W3cLogModuleId = new Guid("{FF160663-DE82-11CF-BC0A-00AA006111E0}");
+		private static readonly Guid OdbcLogModuleId = new Guid("{FF16065B-DE82-11CF-BC0A-00AA006111E0}");
 
 		private Folder ()
 		{
 			
 		}
 
-		public long? SiteID { get; private set; }
+		public String ID { get; private set; }
 		public bool Enabled { get; private set; }
 		public bool IsUTF8 { get; private set; }
 		public String Directory { get; private set; }
 		public String FilenameFormat { get; private set; }
 		public String FileExtension { get; private set; }
 		public IisServiceType IisService { get; private set; }
-		public PeriodType Period { get; private set; }
-		public LogFormatType LogFormat { get; private set; }
+		public IisPeriodType Period { get; private set; }
+		public IisLogFormatType LogFormat { get; private set; }
 		public bool IsLocalTimeRollover { get; private set; }
 		public long TruncateSize { get; private set; }
 
-		public bool IsChildLog(FileInfo fi)
-		{
-			DateTime date;
-			return IsChildLog(fi, out date);
-		}
-
-		public bool IsChildLog(FileInfo fi, out DateTime date)
-		{
-			date = DateTime.MaxValue;
-			Match match = FilenameFormatRegex.Match(fi.Name);
-
-			// not a IIS log file
-			if (!match.Success)
-				return false;
-
-			Group
-				utf8prefixGroup = match.Groups["utf8prefix"],
-				extGroup = match.Groups["ext"],
-				sizeBasedGroup = match.Groups["sizeBased"],
-				dateBasedGroup = match.Groups["dateBased"],
-				formatGroup = match.Groups["format"],
-				yearGroup = match.Groups["year"],
-				monthGroup = match.Groups["month"],
-				dayOrWeekGroup = match.Groups["dayOrWeek"],
-				hourGroup = match.Groups["hour"],
-				indexGroup = match.Groups["index"],
-				zipGroup = match.Groups["zip"];
-
-			// its encoding is different
-			if (this.IsUTF8 != utf8prefixGroup.Success)
-				return false;
-
-			// its extension is different
-			if (!extGroup.Success || this.FileExtension != extGroup.Value)
-				return false;
-
-			// its filename format is different
-			if ((this.Period == PeriodType.MaxSize && !sizeBasedGroup.Success)
-				|| (this.Period != PeriodType.MaxSize && !dateBasedGroup.Success)
-				|| !formatGroup.Success)
-				return false;
-
-			// its log format is different
-			switch (this.LogFormat)
-			{
-				case LogFormatType.CentralBinary:
-					if (formatGroup.Value != (this.Period == PeriodType.MaxSize ? "raw" : "ra"))
-						return false;
-					break;
-
-				case LogFormatType.IIS:
-					if (formatGroup.Value != (this.Period == PeriodType.MaxSize ? "inetsv" : "in"))
-						return false;
-					break;
-
-				case LogFormatType.NCSA:
-					if (formatGroup.Value != (this.Period == PeriodType.MaxSize ? "ncsa" : "nc"))
-						return false;
-					break;
-
-				case LogFormatType.W3C:
-				case LogFormatType.CentralW3C:
-					if (formatGroup.Value != (this.Period == PeriodType.MaxSize ? "extend" : "ex"))
-						return false;
-					break;
-
-				// not yet implemented file format
-				default:
-					return false;
-			}
-
-			int index = 1, hour = 0, dayOrWeek = 1, month = -1, year = -1;
-
-			// its period is different or a value in not parsable
-			switch (this.Period)
-			{
-				case PeriodType.MaxSize:
-					if (!indexGroup.Success
-					 || !Int32.TryParse(indexGroup.Value, out index))
-						return false;
-					break;
-
-				case PeriodType.Hourly:
-					if (!hourGroup.Success
-					 || !Int32.TryParse(indexGroup.Value, out hour))
-						return false;
-					goto case PeriodType.Daily;
-
-				case PeriodType.Daily:
-				case PeriodType.Weekly:
-					if (!dayOrWeekGroup.Success
-					 || !Int32.TryParse(dayOrWeekGroup.Value, out dayOrWeek))
-						return false;
-					goto case PeriodType.Monthly;
-
-				case PeriodType.Monthly:
-					if (!monthGroup.Success
-					 || !Int32.TryParse(monthGroup.Value, out month)
-					 || !yearGroup.Success
-					 || !Int32.TryParse(yearGroup.Value, out year))
-						return false;
-					break;
-
-				// not yet implemented period
-				// TODO Investigate possibly new IIS version periods
-				default:
-					return false;
-			}
-
-			// date
-			if (this.Period == PeriodType.MaxSize)
-			{
-				date = fi.CreationTime;
-			}
-			else if (this.Period == PeriodType.Weekly)
-			{
-				// TODO Week number to day conversion
-				throw new NotImplementedException("Week number to day conversion is not yet implemented");
-			}
-			else
-			{
-				year = DateTimeFormatInfo.CurrentInfo.Calendar.ToFourDigitYear(year);
-				date = new DateTime(year, month, dayOrWeek, hour, 0, 0);
-			}
-			
-			return true;
-		}
-
 		public static Folder Create(ConfigurationElement logFileElement, IisServiceType iisServiceType, bool isUTF8, bool isCentralW3C = false, bool isCentralBinary = false, long? siteId = null)
 		{
-			String dir = (String)logFileElement["directory"];
-			String subdir = iisServiceType.ToString("G");
-			PeriodType periodType = (PeriodType)logFileElement["period"];
-			String filePrefix = isCentralBinary ? null : isUTF8 ? "u_" : null;
-			String fileExtension = ".log";
-
-			LogFormatType logFormatType;
+			IisLogFormatType logFormat;
 
 			if (isCentralBinary)
-				logFormatType = LogFormatType.CentralBinary;
+				logFormat = IisLogFormatType.CentralBinary;
 			else if (isCentralW3C)
-				logFormatType = LogFormatType.CentralW3C;
+				logFormat = IisLogFormatType.CentralW3C;
+			else if (iisServiceType == IisServiceType.FTPSVC)
+				logFormat = IisLogFormatType.W3C;
 			else
+				logFormat = (IisLogFormatType)logFileElement["logFormat"];
+
+			return Create(
+				(bool)logFileElement["enabled"],
+				(String)logFileElement["directory"],
+				iisServiceType,
+				logFormat,
+				(IisPeriodType)logFileElement["period"],
+				isUTF8,
+				(bool)logFileElement["localTimeRollover"],
+				(long)logFileElement["truncateSize"],
+				siteId
+			);
+		}
+
+		public static Folder Create(DirectoryEntry logFileEntry, IisServiceType iisServiceType, bool isUTF8, bool isCentralW3C = false, bool isCentralBinary = false, long? siteId = null)
+		{
+			IisLogFormatType logFormat = IisLogFormatType.Custom;
+
+			if (isCentralBinary)
 			{
-				subdir += siteId.Value.ToString();
-				logFormatType = (iisServiceType != IisServiceType.FTPSVC) ? (LogFormatType)logFileElement["logFormat"] : LogFormatType.W3C;
+				logFormat = IisLogFormatType.CentralBinary;
+			}
+			else if (isCentralW3C)
+			{
+				logFormat = IisLogFormatType.CentralW3C;
+			}
+			else if (logFileEntry.Properties["LogPluginClsid"].Value != null)
+			{
+				Guid logPluginClsid = Guid.Parse((String)logFileEntry.Properties["LogPluginClsid"].Value);
+
+				if (logPluginClsid == IisLogModuleId)
+					logFormat = IisLogFormatType.IIS;
+				else if (logPluginClsid == NcsaLogModuleId)
+					logFormat = IisLogFormatType.NCSA;
+				else if (logPluginClsid == W3cLogModuleId)
+					logFormat = IisLogFormatType.W3C;
 			}
 
-			switch (logFormatType)
+			bool isLocaltimeRollover = false;
+
+			if (logFileEntry.SchemaClassName == "IIsWebService"
+			 || logFileEntry.SchemaClassName == "IIsWebServer"
+			 || logFileEntry.SchemaClassName == "IIsFtpService"
+			 || logFileEntry.SchemaClassName == "IIsFtpServer")
 			{
-				case LogFormatType.CentralBinary:
-					filePrefix = (periodType == PeriodType.MaxSize) ? "raw" : "ra";
+				isLocaltimeRollover = (bool)logFileEntry.Properties["LogFileLocaltimeRollover"].Value;
+			}
+
+			return Create(
+				((int)logFileEntry.Properties["LogType"].Value == 1),
+				(String)logFileEntry.Properties["LogFileDirectory"].Value,
+				iisServiceType,
+				logFormat,
+				(IisPeriodType)logFileEntry.Properties["LogFilePeriod"].Value,
+				isUTF8,
+				isLocaltimeRollover,
+				(int)logFileEntry.Properties["LogFileTruncateSize"].Value,
+				siteId
+			);
+		}
+
+		private static Folder Create(bool enabled, String dir, IisServiceType iisService, IisLogFormatType logFormat, IisPeriodType period, bool isUTF8, bool isLocalTimeRollover, long truncateSize, long? siteId)
+		{
+			String subdir = iisService.ToString("G");
+			String filePrefix = (logFormat == IisLogFormatType.CentralBinary) ? null : isUTF8 ? "u_" : null;
+			String fileExtension = ".log";
+
+			if (logFormat != IisLogFormatType.CentralBinary && logFormat != IisLogFormatType.CentralW3C)
+			{
+				subdir += siteId.Value.ToString();
+			}
+
+			switch (logFormat)
+			{
+				case IisLogFormatType.CentralBinary:
+					filePrefix = (period == IisPeriodType.MaxSize) ? "raw" : "ra";
 					fileExtension = ".ibl";
 					break;
 
-				case LogFormatType.IIS:
-					filePrefix += (periodType == PeriodType.MaxSize) ? "inetsv" : "in";
+				case IisLogFormatType.IIS:
+					filePrefix += (period == IisPeriodType.MaxSize) ? "inetsv" : "in";
 					break;
 
-				case LogFormatType.NCSA:
-					filePrefix += (periodType == PeriodType.MaxSize) ? "ncsa" : "nc";
+				case IisLogFormatType.NCSA:
+					filePrefix += (period == IisPeriodType.MaxSize) ? "ncsa" : "nc";
 					break;
 
-				case LogFormatType.CentralW3C:
-				case LogFormatType.W3C:
-					filePrefix += (periodType == PeriodType.MaxSize) ? "extend" : "ex";
+				case IisLogFormatType.CentralW3C:
+				case IisLogFormatType.W3C:
+					filePrefix += (period == IisPeriodType.MaxSize) ? "extend" : "ex";
 					break;
 
 				default:
-					throw new NotImplementedException("logFormat=" + logFormatType + " is not yet implemented");
+					throw new NotImplementedException("logFormat=" + logFormat + " is not yet implemented");
 			}
 
 			String fileformat;
 
-			switch (periodType)
+			switch (period)
 			{
-				case PeriodType.MaxSize: fileformat = "{0}"; break;
-				case PeriodType.Hourly: fileformat = "{0:yyMMddhh}"; break;
-				case PeriodType.Daily: fileformat = "{0:yyMMdd}"; break;
-				case PeriodType.Weekly: fileformat = "{0:yyMM}{1:00}"; break;
-				case PeriodType.Monthly: fileformat = "{0:yyMM}"; break;
-				default: throw new NotImplementedException("period=" + periodType + " is not yet implemented");
+				case IisPeriodType.MaxSize: fileformat = "{0}"; break;
+				case IisPeriodType.Hourly: fileformat = "{0:yyMMddhh}"; break;
+				case IisPeriodType.Daily: fileformat = "{0:yyMMdd}"; break;
+				case IisPeriodType.Weekly: fileformat = "{0:yyMM}{1:00}"; break;
+				case IisPeriodType.Monthly: fileformat = "{0:yyMM}"; break;
+				default: throw new NotImplementedException("period=" + period + " is not yet implemented");
 			}
 
 			String directory = null;
 			String fileLogFormat = null;
-			
-			if (logFormatType != LogFormatType.Custom)
+
+			if (logFormat != IisLogFormatType.Custom)
 			{
 				directory = Path.Combine(
 					dir,
@@ -267,18 +174,23 @@ namespace Smartgeek.LogRotator
 
 			return new Folder()
 			{
-				SiteID = siteId,
-				Enabled = (bool)logFileElement["enabled"],
+				ID = subdir,
+				Enabled = enabled,
 				IsUTF8 = isUTF8,
 				Directory = directory,
 				FilenameFormat = fileLogFormat,
 				FileExtension = fileExtension,
-				IisService = iisServiceType,
-				Period = periodType,
-				LogFormat = logFormatType,
-				IsLocalTimeRollover = (bool)logFileElement["localTimeRollover"],
-				TruncateSize = (long)logFileElement["truncateSize"]
+				IisService = iisService,
+				Period = period,
+				LogFormat = logFormat,
+				IsLocalTimeRollover = isLocalTimeRollover,
+				TruncateSize = truncateSize
 			};
+		}
+
+		public override String ToString()
+		{
+			return this.Directory;
 		}
 	}
 }
