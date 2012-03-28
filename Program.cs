@@ -18,7 +18,7 @@ namespace Smartgeek.LogRotator
 
 		private static void Main(string[] args)
 		{
-			Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+			Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
