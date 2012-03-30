@@ -143,6 +143,7 @@
     <Compile Include="Configuration\RotationSection.cs" />
     <Compile Include="Configuration\RuntimeConfig.cs" />
     <Compile Include="Configuration\SiteRotationSettingsElement.cs" />
+    <Compile Include="DeleteReasonType.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FileLogComparer.cs" />
     <Compile Include="FileLogInfo.cs" />

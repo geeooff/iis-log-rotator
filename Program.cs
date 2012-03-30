@@ -15,9 +15,21 @@ namespace Smartgeek.LogRotator
 	class Program
 	{
 		private const int MaxMissingCount = 100;
+		private static bool SimulationMode = false;
 
 		private static void Main(string[] args)
 		{
+			if (args != null)
+			{
+				SimulationMode = args.Contains("/simulate", StringComparer.OrdinalIgnoreCase) || args.Contains("/s", StringComparer.OrdinalIgnoreCase);
+
+				if (SimulationMode)
+				{
+					Console.Out.WriteLine("Simulation Mode");
+					Trace.TraceInformation("Simulation Mode");
+				}
+			}
+
 			Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -60,6 +72,7 @@ namespace Smartgeek.LogRotator
 				Environment.Exit(-1);
 			}
 
+			folders.ForEach(WriteFolderInfo);
 			folders.ForEach(ProcessFolder);
 		}
 
@@ -405,6 +418,11 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
+		private static void WriteFolderInfo(Folder folder)
+		{
+
+		}
+
 		private static void ProcessFolder(Folder folder)
 		{
 			if (!folder.Enabled)
@@ -461,6 +479,8 @@ namespace Smartgeek.LogRotator
 					.OrderBy(f => f.Date)
 			);
 
+			List<FileLogInfo> deletedLogFiles = new List<FileLogInfo>(0);
+
 			// datetime references
 			bool useUTC = !folder.IsLocalTimeRollover;
 			DateTime now = useUTC ? DateTime.Now.ToUniversalTime() : DateTime.Now;
@@ -484,8 +504,10 @@ namespace Smartgeek.LogRotator
 
 					logFilesToDelete.ForEach(delegate(FileLogInfo fileLog)
 					{
-						if (Delete(fileLog))
+						if (Delete(fileLog, DeleteReasonType.Obsolete))
+						{
 							deletedCount++;
+						}
 					});
 
 					Trace.TraceInformation("Folder {0}: {1} log files deleted", folder.Directory, deletedCount);
@@ -520,7 +542,7 @@ namespace Smartgeek.LogRotator
 						if (Compress(fileLog))
 						{
 							compressedCount++;
-							if (Delete(fileLog))
+							if (Delete(fileLog, DeleteReasonType.PreviouslyCompressed))
 							{
 								deletedCount++;
 							}
@@ -672,22 +694,27 @@ namespace Smartgeek.LogRotator
 		//    }
 		//}
 
-		private static bool Delete(FileLogInfo fileLog)
+		private static bool Delete(FileLogInfo fileLog, DeleteReasonType reasonType)
 		{
-			Console.Out.Write("Deleting {0}... ", fileLog.File.FullName);
+			Trace.TraceInformation("{0} deleting (reason: {1})...", fileLog.File.FullName, reasonType);
 			try
 			{
-				fileLog.File.Delete();
-				fileLog.File.Refresh();
-				Trace.TraceInformation("{0} deleted", fileLog.File.FullName);
-				Console.Out.WriteLine("OK");
+				if (!SimulationMode)
+				{
+					fileLog.File.Delete();
+					fileLog.File.Refresh();
+					Trace.TraceInformation("{0} deleted", fileLog.File.FullName);
+				}
+				else
+				{
+					Trace.TraceInformation("{0} not deleted (simulation mode)", fileLog.File.FullName);
+				}				
 				return true;
 			}
 			catch (Exception ex)
 			{
 				Trace.TraceError("{0} delete error: {1}", fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
-				Console.Out.WriteLine("ERROR: {0}", ex.Message);
 				return false;
 			}
 		}
@@ -695,7 +722,7 @@ namespace Smartgeek.LogRotator
 		private static bool Compress(FileLogInfo fileLog)
 		{
 			FileInfo compressedFileInfo = new FileInfo(String.Concat(fileLog.File.FullName, ".zip"));
-			Console.Out.Write("Compressing {0} to {1}... ", fileLog.File.FullName, compressedFileInfo.Name);
+			Trace.TraceInformation("{0} compressing to {1}...", fileLog.File.FullName, compressedFileInfo.Name);
 			try
 			{
 				if (compressedFileInfo.Exists)
@@ -708,7 +735,11 @@ namespace Smartgeek.LogRotator
 				{
 					zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
 					zip.AddFile(fileLog.File.FullName, String.Empty);
-					zip.Save();
+
+					if (!SimulationMode)
+					{
+						zip.Save();
+					}
 				}
 				Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
 
@@ -719,15 +750,13 @@ namespace Smartgeek.LogRotator
 					compressedFileInfo.CreationTimeUtc = fileLog.File.CreationTimeUtc;
 					compressedFileInfo.LastWriteTimeUtc = fileLog.File.LastWriteTimeUtc;
 				}
-				
-				Console.Out.WriteLine("OK");
+
 				return true;
 			}
 			catch (Exception ex)
 			{
 				Trace.TraceError("{0} compression error: {1}", fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
-				Console.Out.WriteLine("ERROR: {0}", ex.Message);
 				return false;
 			}
 		}

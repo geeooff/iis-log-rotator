@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace Smartgeek.LogRotator
 {
-	public class FileLogInfo
+	public class FileLogInfo : IEquatable<FileLogInfo>
 	{
 		private static readonly Regex FilenameFormatRegex;
 
@@ -182,6 +182,14 @@ namespace Smartgeek.LogRotator
 		public override String ToString()
 		{
 			return this.File.FullName;
+		}
+
+		public bool Equals(FileLogInfo other)
+		{
+			if (other == null)
+				return false;
+
+			return StringComparer.CurrentCultureIgnoreCase.Equals(this.File.FullName, other.File.FullName);
 		}
 	}
 }
