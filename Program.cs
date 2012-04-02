@@ -31,7 +31,6 @@ namespace Smartgeek.LogRotator
 			}
 
 			Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
-			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 			{
@@ -72,8 +71,16 @@ namespace Smartgeek.LogRotator
 				Environment.Exit(-1);
 			}
 
-			folders.ForEach(WriteFolderInfo);
-			folders.ForEach(ProcessFolder);
+			if (folders.Count > 0)
+			{
+				Console.Out.WriteLine("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
+				folders.ForEach(WriteFolderInfo);
+				folders.ForEach(ProcessFolder);
+			}
+			else
+			{
+				Trace.TraceWarning("No folder read from IIS");
+			}
 		}
 
 		private static void AddIis6xFolders(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
@@ -89,12 +96,10 @@ namespace Smartgeek.LogRotator
 					{
 						w3svc = lm.Children.Find("W3SVC", "IisWebService");
 						Trace.TraceInformation("W3SVC feature found");
-						Console.Out.WriteLine("W3SVC feature found");
 					}
 					catch (Exception ex)
 					{
 						Trace.TraceInformation("W3SVC feature not found ({0})", ex.Message);
-						Console.Out.WriteLine("W3SVC feature not found");
 					}
 
 					if (w3svc != null)
@@ -164,12 +169,10 @@ namespace Smartgeek.LogRotator
 					{
 						msftpsvc = lm.Children.Find("MSFTPSVC", "IisFtpService");
 						Trace.TraceInformation("MSFTPSVC feature found");
-						Console.Out.WriteLine("MSFTPSVC feature found");
 					}
 					catch (Exception ex)
 					{
 						Trace.TraceInformation("MSFTPSVC feature not found ({0})", ex.Message);
-						Console.Out.WriteLine("MSFTPSVC feature not found");
 					}
 
 					if (msftpsvc != null)
@@ -215,12 +218,10 @@ namespace Smartgeek.LogRotator
 					{
 						smtpsvc = lm.Children.Find("SMTPSVC", "IIsSmtpService");
 						Trace.TraceInformation("SMTPSVC feature found");
-						Console.Out.WriteLine("SMTPSVC feature found");
 					}
 					catch (Exception ex)
 					{
 						Trace.TraceInformation("SMTPSVC feature not found ({0})", ex.Message);
-						Console.Out.WriteLine("SMTPSVC feature not found");
 					}
 
 					if (smtpsvc != null)
@@ -260,12 +261,10 @@ namespace Smartgeek.LogRotator
 					{
 						nntpsvc = lm.Children.Find("NNTPSVC", "IIsNntpService");
 						Trace.TraceInformation("NNTPSVC feature found");
-						Console.Out.WriteLine("NNTPSVC feature found");
 					}
 					catch (Exception ex)
 					{
 						Trace.TraceInformation("NNTPSVC feature not found ({0})", ex.Message);
-						Console.Out.WriteLine("NNTPSVC feature not found");
 					}
 
 					if (nntpsvc != null)
@@ -420,30 +419,41 @@ namespace Smartgeek.LogRotator
 
 		private static void WriteFolderInfo(Folder folder)
 		{
-
+			Trace.TraceInformation(
+				"ID = {0}, Format = {1}, Folder = {2}",
+				folder.ID,
+				folder.FilenameFormat,
+				folder.Directory
+			);
+			Console.Out.WriteLine(
+				"ID = {0}, Format = {1}, Folder = {2}",
+				folder.ID,
+				folder.FilenameFormat,
+				folder.Directory
+			);
 		}
 
 		private static void ProcessFolder(Folder folder)
 		{
 			if (!folder.Enabled)
 			{
-				Trace.TraceInformation("Skipping folder {0} because logging is disabled", folder.Directory);
-				Console.Out.WriteLine("Skipping folder {0} because logging is disabled", folder.Directory);
+				Trace.TraceInformation("{0}: skipping because logging is disabled", folder.Directory);
+				Console.Out.WriteLine("{0}: skipping because logging is disabled", folder.Directory);
 				return;
 			}
 
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
-				Trace.TraceInformation("Skipping folder {0} because custom logging is used", folder.Directory);
-				Console.Out.WriteLine("Skipping folder {0} because custom logging is used", folder.Directory);
+				Trace.TraceInformation("{0}: because custom logging is used", folder.Directory);
+				Console.Out.WriteLine("{0}: because custom logging is used", folder.Directory);
 				return;
 			}
 
 			DirectoryInfo di = new DirectoryInfo(folder.Directory);
 			if (!di.Exists)
 			{
-				Trace.TraceInformation("Skipping inexistant folder {0}", folder.Directory);
-				Console.Out.WriteLine("Skipping inexistant folder {0}", folder.Directory);
+				Trace.TraceInformation("{0}: folder not found", folder.Directory);
+				Console.Out.WriteLine("{0}: folder not found", folder.Directory);
 				return;
 			}
 			
@@ -452,8 +462,8 @@ namespace Smartgeek.LogRotator
 
 			if (!settings.Compress && !settings.Delete)
 			{
-				Trace.TraceInformation("Skipping folder {0} because compression and deletion are disabled", folder.Directory);
-				Console.Out.WriteLine("Skipping folder {0} because compression and deletion are disabled", folder.Directory);
+				Trace.TraceInformation("{0}: skipping because compression and deletion are disabled", folder.Directory);
+				Console.Out.WriteLine("{0}: skipping because compression and deletion are disabled", folder.Directory);
 				return;
 			}
 
@@ -497,8 +507,8 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToDelete.Count > 0)
 				{
-					Trace.TraceInformation("Folder {0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
-					Console.Out.WriteLine("Folder {0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
+					Trace.TraceInformation("{0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
+					Console.Out.WriteLine("{0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
 
 					int deletedCount = 0;
 
@@ -510,13 +520,13 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("Folder {0}: {1} log files deleted", folder.Directory, deletedCount);
-					Console.Out.WriteLine("Folder {0}: {1} log files deleted", folder.Directory, deletedCount);
+					Trace.TraceInformation("{0}: {1} log files deleted", folder.Directory, deletedCount);
+					Console.Out.WriteLine("{0}: {1} log files deleted", folder.Directory, deletedCount);
 				}
 				else
 				{
-					Trace.TraceInformation("Folder {0}: no file to delete", folder.Directory);
-					Console.Out.WriteLine("Folder {0}: no file to delete", folder.Directory);
+					Trace.TraceInformation("{0}: no file to delete", folder.Directory);
+					Console.Out.WriteLine("{0}: no file to delete", folder.Directory);
 				}
 			}
 
@@ -532,8 +542,8 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToCompress.Count > 0)
 				{
-					Trace.TraceInformation("Folder {0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
-					Console.Out.WriteLine("Folder {0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
+					Trace.TraceInformation("{0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
+					Console.Out.WriteLine("{0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
 
 					int compressedCount = 0, deletedCount = 0;
 
@@ -549,13 +559,13 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("Folder {0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
-					Console.Out.WriteLine("Folder {0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
+					Trace.TraceInformation("{0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
+					Console.Out.WriteLine("{0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
 				}
 				else
 				{
-					Trace.TraceInformation("Folder {0}: no file to compress", folder.Directory);
-					Console.Out.WriteLine("Folder {0}: no file to compress", folder.Directory);
+					Trace.TraceInformation("{0}: no file to compress", folder.Directory);
+					Console.Out.WriteLine("{0}: no file to compress", folder.Directory);
 				}
 			}
 		}
@@ -727,8 +737,15 @@ namespace Smartgeek.LogRotator
 			{
 				if (compressedFileInfo.Exists)
 				{
-					Trace.TraceInformation("{0} deleted (overwrite)", fileLog.File.FullName);
-					compressedFileInfo.Delete();
+					if (!SimulationMode)
+					{
+						Trace.TraceInformation("{0} deleted (overwrite)", fileLog.File.FullName);
+						compressedFileInfo.Delete();
+					}
+					else
+					{
+						Trace.TraceInformation("{0} not deleted (overwrite, simulation mode)", fileLog.File.FullName);
+					}
 				}
 
 				using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(compressedFileInfo.FullName))
@@ -739,13 +756,17 @@ namespace Smartgeek.LogRotator
 					if (!SimulationMode)
 					{
 						zip.Save();
+						Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
+					}
+					else
+					{
+						Trace.TraceInformation("{0} not compressed (simulation mode)", fileLog.File.FullName);
 					}
 				}
-				Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
-
+				
 				compressedFileInfo.Refresh();
 
-				if (compressedFileInfo.Exists)
+				if (compressedFileInfo.Exists && !SimulationMode)
 				{
 					compressedFileInfo.CreationTimeUtc = fileLog.File.CreationTimeUtc;
 					compressedFileInfo.LastWriteTimeUtc = fileLog.File.LastWriteTimeUtc;

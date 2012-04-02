@@ -165,15 +165,23 @@ namespace Smartgeek.LogRotator
 			{
 				_date = this.File.CreationTime;
 			}
-			else if (this.Folder.Period == IisPeriodType.Weekly)
-			{
-				// TODO Week number to day conversion
-				throw new NotImplementedException("Week number to day conversion is not yet implemented");
-			}
 			else
 			{
 				year = DateTimeFormatInfo.CurrentInfo.Calendar.ToFourDigitYear(year);
-				_date = new DateTime(year, month, dayOrWeek, hour, 0, 0);
+
+				if (this.Folder.Period == IisPeriodType.Weekly)
+				{
+					// TODO optimize that code...
+					for (int x = 0, max = DateTime.DaysInMonth(year, month); x < max; x++)
+					{
+						_date = new DateTime(year, month, 1 + x);
+						if (_date.GetWeekOfMonth() == dayOrWeek) break;
+					}
+				}
+				else
+				{
+					_date = new DateTime(year, month, dayOrWeek, hour, 0, 0);
+				}
 			}
 
 			_isChild = true;
