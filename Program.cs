@@ -74,6 +74,7 @@ namespace Smartgeek.LogRotator
 			if (folders.Count > 0)
 			{
 				Console.Out.WriteLine("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
+				Trace.TraceInformation("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
 				folders.ForEach(WriteFolderInfo);
 				folders.ForEach(ProcessFolder);
 			}
@@ -420,14 +421,16 @@ namespace Smartgeek.LogRotator
 		private static void WriteFolderInfo(Folder folder)
 		{
 			Trace.TraceInformation(
-				"ID = {0}, Format = {1}, Folder = {2}",
+				"{0}: Period = {1}, Format = {2}, Folder = {3}",
 				folder.ID,
+				folder.Period,
 				folder.FilenameFormat,
 				folder.Directory
 			);
 			Console.Out.WriteLine(
-				"ID = {0}, Format = {1}, Folder = {2}",
+				"{0}: Period = {1}, Format = {2}, Folder = {3}",
 				folder.ID,
+				folder.Period,
 				folder.FilenameFormat,
 				folder.Directory
 			);
@@ -437,23 +440,23 @@ namespace Smartgeek.LogRotator
 		{
 			if (!folder.Enabled)
 			{
-				Trace.TraceInformation("{0}: skipping because logging is disabled", folder.Directory);
-				Console.Out.WriteLine("{0}: skipping because logging is disabled", folder.Directory);
+				Trace.TraceInformation("{0}: skipping because logging is disabled", folder.ID);
+				Console.Out.WriteLine("{0}: skipping because logging is disabled", folder.ID);
 				return;
 			}
 
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
-				Trace.TraceInformation("{0}: because custom logging is used", folder.Directory);
-				Console.Out.WriteLine("{0}: because custom logging is used", folder.Directory);
+				Trace.TraceInformation("{0}: because custom logging is used", folder.ID);
+				Console.Out.WriteLine("{0}: because custom logging is used", folder.ID);
 				return;
 			}
 
 			DirectoryInfo di = new DirectoryInfo(folder.Directory);
 			if (!di.Exists)
 			{
-				Trace.TraceInformation("{0}: folder not found", folder.Directory);
-				Console.Out.WriteLine("{0}: folder not found", folder.Directory);
+				Trace.TraceInformation("{0}: folder not found", folder.ID);
+				Console.Out.WriteLine("{0}: folder not found", folder.ID);
 				return;
 			}
 			
@@ -462,8 +465,8 @@ namespace Smartgeek.LogRotator
 
 			if (!settings.Compress && !settings.Delete)
 			{
-				Trace.TraceInformation("{0}: skipping because compression and deletion are disabled", folder.Directory);
-				Console.Out.WriteLine("{0}: skipping because compression and deletion are disabled", folder.Directory);
+				Trace.TraceInformation("{0}: skipping because compression and deletion are disabled", folder.ID);
+				Console.Out.WriteLine("{0}: skipping because compression and deletion are disabled", folder.ID);
 				return;
 			}
 
@@ -507,8 +510,8 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToDelete.Count > 0)
 				{
-					Trace.TraceInformation("{0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
-					Console.Out.WriteLine("{0}: {1} log files to delete...", folder.Directory, logFilesToDelete.Count);
+					Trace.TraceInformation("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
+					Console.Out.WriteLine("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
 
 					int deletedCount = 0;
 
@@ -520,13 +523,13 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("{0}: {1} log files deleted", folder.Directory, deletedCount);
-					Console.Out.WriteLine("{0}: {1} log files deleted", folder.Directory, deletedCount);
+					Trace.TraceInformation("{0}: {1} log files deleted", folder.ID, deletedCount);
+					Console.Out.WriteLine("{0}: {1} log files deleted", folder.ID, deletedCount);
 				}
 				else
 				{
-					Trace.TraceInformation("{0}: no file to delete", folder.Directory);
-					Console.Out.WriteLine("{0}: no file to delete", folder.Directory);
+					Trace.TraceInformation("{0}: no file to delete", folder.ID);
+					Console.Out.WriteLine("{0}: no file to delete", folder.ID);
 				}
 			}
 
@@ -542,8 +545,8 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToCompress.Count > 0)
 				{
-					Trace.TraceInformation("{0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
-					Console.Out.WriteLine("{0}: {1} log files to compress...", folder.Directory, logFilesToCompress.Count);
+					Trace.TraceInformation("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
+					Console.Out.WriteLine("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
 
 					int compressedCount = 0, deletedCount = 0;
 
@@ -559,13 +562,13 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("{0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
-					Console.Out.WriteLine("{0}: {1} compressed, {2} deleted", folder.Directory, compressedCount, deletedCount);
+					Trace.TraceInformation("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
+					Console.Out.WriteLine("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
 				}
 				else
 				{
-					Trace.TraceInformation("{0}: no file to compress", folder.Directory);
-					Console.Out.WriteLine("{0}: no file to compress", folder.Directory);
+					Trace.TraceInformation("{0}: no file to compress", folder.ID);
+					Console.Out.WriteLine("{0}: no file to compress", folder.ID);
 				}
 			}
 		}
