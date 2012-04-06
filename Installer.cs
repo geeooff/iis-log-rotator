@@ -163,6 +163,7 @@ namespace Smartgeek.LogRotator
 			Trace.TraceInformation("Scheduled task \"{0}\" has been created", taskName);
 			this.Context.LogMessage("Information: Scheduled task \"" + taskName + "\" has been created");
 			this.Context.LogMessage("Information: The scheduled task is DISABLED by default !");
+			this.Context.LogMessage("Information: Execute this command line to enable: schtasks.exe /Change /TN \"" + taskName + "\" /ENABLE");
 		}
 
 		private void UninstallTask(IDictionary savedState)
