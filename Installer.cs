@@ -107,12 +107,13 @@ namespace Smartgeek.LogRotator
 			FileInfo targetExeFileInfo = new FileInfo(Path.Combine(targetDir, exeFileInfo.Name));
 
 			String taskName;
+			bool isNewGen;
 
 			// init. task scheduler service engine
 			using (TS.TaskService ts = new TS.TaskService())
 			{
 				// check if scheduler engine is V2 (starting with 
-				bool isNewGen = (ts.HighestSupportedVersion >= new Version(1, 2));
+				isNewGen = (ts.HighestSupportedVersion >= new Version(1, 2));
 
 				TS.TaskDefinition td = ts.NewTask();
 
@@ -163,6 +164,8 @@ namespace Smartgeek.LogRotator
 			Trace.TraceInformation("Scheduled task \"{0}\" has been created", taskName);
 			this.Context.LogMessage("Information: Scheduled task \"" + taskName + "\" has been created");
 			this.Context.LogMessage("Information: The scheduled task is DISABLED by default !");
+
+			// TODO don't advise to use schtasks.exe for older windows (which older ones ?)
 			this.Context.LogMessage("Information: Execute this command line to enable: schtasks.exe /Change /TN \"" + taskName + "\" /ENABLE");
 		}
 
