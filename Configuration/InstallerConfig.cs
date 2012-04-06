@@ -6,7 +6,7 @@ using System.Configuration;
 
 namespace Smartgeek.LogRotator.Configuration
 {
-	public static class RuntimeConfig
+	public static class InstallerConfig
 	{
 		private static readonly Object s_rotationSectionInitializeSyncRoot = new Object();
 
@@ -34,7 +34,8 @@ namespace Smartgeek.LogRotator.Configuration
 					{
 						try
 						{
-							s_config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+							String exeLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+							s_config = ConfigurationManager.OpenExeConfiguration(exeLocation);
 							s_rotationSection = (RotationSection)s_config.GetSection(@"rotation");
 
 							if (s_rotationSection == null)

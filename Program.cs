@@ -14,73 +14,95 @@ namespace Smartgeek.LogRotator
 {
 	class Program
 	{
-		private const int MaxMissingCount = 100;
-		private static bool SimulationMode = false;
+		private static bool s_simulationMode;
+		private static LogHelper s_logHelper;
 
 		private static void Main(string[] args)
 		{
-			if (args != null)
+			using (s_logHelper = new LogHelper())
 			{
-				SimulationMode = args.Contains("/simulate", StringComparer.OrdinalIgnoreCase) || args.Contains("/s", StringComparer.OrdinalIgnoreCase);
-
-				if (SimulationMode)
+				if (args != null)
 				{
-					Console.Out.WriteLine("Simulation Mode");
-					Trace.TraceInformation("Simulation Mode");
+					s_simulationMode = args.Contains("/simulate", StringComparer.OrdinalIgnoreCase) || args.Contains("/s", StringComparer.OrdinalIgnoreCase);
+
+					if (s_simulationMode)
+					{
+						s_logHelper.WriteLineOut("Simulation Mode");
+						s_logHelper.WriteLineOut();
+						Trace.TraceInformation("Simulation Mode");
+					}
 				}
-			}
 
-			Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
+				Process currentProcess = Process.GetCurrentProcess();
 
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-			{
-				Console.Error.WriteLine("Must be a Windows NT platform");
-				Trace.TraceWarning("Abort: PlatformID = {0}", Environment.OSVersion.Platform);
-				Environment.Exit(-1);
-			}
+				// change the current process priority to be below normal
+				// compression can be an expensive task, so we care about the other processes
+				if (currentProcess.PriorityClass != ProcessPriorityClass.BelowNormal)
+				{
+					currentProcess.PriorityClass = ProcessPriorityClass.BelowNormal;
+				}
 
-			List<Folder> folders = new List<Folder>();
+				if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+				{
+					s_logHelper.WriteLineError("Must be a Windows NT platform");
+					Trace.TraceWarning("Abort: PlatformID = {0}", Environment.OSVersion.Platform);
+					Environment.ExitCode = -1;
+					return;
+				}
 
-			if (Environment.OSVersion.Version.Major == 6)
-			{
-				Console.Out.WriteLine("Reading IIS 6.0 configuration...");
-				Trace.TraceInformation("Reading IIS 6.0 configuration...");
-				AddIis6xFolders(folders, skipHttp: true, skipFtp: true);
+				List<Folder> folders = new List<Folder>();
 
-				Console.Out.WriteLine("Reading IIS 7.x configuration...");
-				Trace.TraceInformation("Reading IIS 7.x configuration...");
-				AddIis7xFolders(folders);
-			}
-			else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 1)
-			{
-				Console.Out.WriteLine("Reading IIS 5.x configuration...");
-				Trace.TraceInformation("Reading IIS 5.x configuration...");
-				AddIis6xFolders(folders);
-			}
-			else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 2)
-			{
-				Console.Out.WriteLine("Reading IIS 6.x configuration...");
-				Trace.TraceInformation("Reading IIS 6.x configuration...");
-				// IIS 6.0 is quite the same as IIS 5.0, so please don't blame me for this naming ^^
-				AddIis6xFolders(folders);
-			}
-			else
-			{
-				Console.Error.WriteLine("Must be a Windows NT 5.1 or newer");
-				Trace.TraceWarning("Abort: OSVersion = {0}", Environment.OSVersion);
-				Environment.Exit(-1);
-			}
+				if (Environment.OSVersion.Version.Major == 6)
+				{
+					s_logHelper.WriteLineOut("Reading IIS 6.0 configuration...");
+					Trace.TraceInformation("Reading IIS 6.0 configuration...");
+					AddIis6xFolders(folders, skipHttp: true, skipFtp: true);
 
-			if (folders.Count > 0)
-			{
-				Console.Out.WriteLine("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
-				Trace.TraceInformation("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
-				folders.ForEach(WriteFolderInfo);
-				folders.ForEach(ProcessFolder);
-			}
-			else
-			{
-				Trace.TraceWarning("No folder read from IIS");
+					s_logHelper.WriteLineOut("Reading IIS 7.x configuration...");
+					Trace.TraceInformation("Reading IIS 7.x configuration...");
+					AddIis7xFolders(folders);
+				}
+				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 1)
+				{
+					s_logHelper.WriteLineOut("Reading IIS 5.x configuration...");
+					Trace.TraceInformation("Reading IIS 5.x configuration...");
+					AddIis6xFolders(folders);
+				}
+				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 2)
+				{
+					s_logHelper.WriteLineOut("Reading IIS 6.x configuration...");
+					Trace.TraceInformation("Reading IIS 6.x configuration...");
+					// IIS 6.0 is quite the same as IIS 5.0, so please don't blame me for this naming ^^
+					AddIis6xFolders(folders);
+				}
+				else
+				{
+					s_logHelper.WriteLineError("Must be a Windows NT 5.1 or newer");
+					Trace.TraceWarning("Abort: OSVersion = {0}", Environment.OSVersion);
+					Environment.Exit(-1);
+				}
+
+				s_logHelper.WriteLineOut();
+
+				if (folders.Count > 0)
+				{
+					s_logHelper.WriteLineOut("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
+					Trace.TraceInformation("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
+					folders.ForEach(WriteFolderInfo);
+
+					s_logHelper.WriteLineOut();
+					s_logHelper.WriteLineOut("Processing:");
+
+					folders.ForEach(ProcessFolder);
+				}
+				else
+				{
+					s_logHelper.WriteLineOut("No folder read from IIS");
+					Trace.TraceWarning("No folder read from IIS");
+				}
+
+				s_logHelper.WriteLineOut();
+				s_logHelper.WriteLineOut("End");
 			}
 		}
 
@@ -427,7 +449,7 @@ namespace Smartgeek.LogRotator
 				folder.FilenameFormat,
 				folder.Directory
 			);
-			Console.Out.WriteLine(
+			s_logHelper.WriteLineOut(
 				"{0}: Period = {1}, Format = {2}, Folder = {3}",
 				folder.ID,
 				folder.Period,
@@ -441,14 +463,14 @@ namespace Smartgeek.LogRotator
 			if (!folder.Enabled)
 			{
 				Trace.TraceInformation("{0}: skipping because logging is disabled", folder.ID);
-				Console.Out.WriteLine("{0}: skipping because logging is disabled", folder.ID);
+				s_logHelper.WriteLineOut("{0}: skipping because logging is disabled", folder.ID);
 				return;
 			}
 
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
 				Trace.TraceInformation("{0}: because custom logging is used", folder.ID);
-				Console.Out.WriteLine("{0}: because custom logging is used", folder.ID);
+				s_logHelper.WriteLineOut("{0}: because custom logging is used", folder.ID);
 				return;
 			}
 
@@ -456,7 +478,7 @@ namespace Smartgeek.LogRotator
 			if (!di.Exists)
 			{
 				Trace.TraceInformation("{0}: folder not found", folder.ID);
-				Console.Out.WriteLine("{0}: folder not found", folder.ID);
+				s_logHelper.WriteLineOut("{0}: folder not found", folder.ID);
 				return;
 			}
 			
@@ -466,7 +488,7 @@ namespace Smartgeek.LogRotator
 			if (!settings.Compress && !settings.Delete)
 			{
 				Trace.TraceInformation("{0}: skipping because compression and deletion are disabled", folder.ID);
-				Console.Out.WriteLine("{0}: skipping because compression and deletion are disabled", folder.ID);
+				s_logHelper.WriteLineOut("{0}: skipping because compression and deletion are disabled", folder.ID);
 				return;
 			}
 
@@ -511,7 +533,7 @@ namespace Smartgeek.LogRotator
 				if (logFilesToDelete.Count > 0)
 				{
 					Trace.TraceInformation("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
-					Console.Out.WriteLine("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
+					s_logHelper.WriteLineOut("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
 
 					int deletedCount = 0;
 
@@ -524,12 +546,12 @@ namespace Smartgeek.LogRotator
 					});
 
 					Trace.TraceInformation("{0}: {1} log files deleted", folder.ID, deletedCount);
-					Console.Out.WriteLine("{0}: {1} log files deleted", folder.ID, deletedCount);
+					s_logHelper.WriteLineOut("{0}: {1} log files deleted", folder.ID, deletedCount);
 				}
 				else
 				{
 					Trace.TraceInformation("{0}: no file to delete", folder.ID);
-					Console.Out.WriteLine("{0}: no file to delete", folder.ID);
+					s_logHelper.WriteLineOut("{0}: no file to delete", folder.ID);
 				}
 			}
 
@@ -546,7 +568,7 @@ namespace Smartgeek.LogRotator
 				if (logFilesToCompress.Count > 0)
 				{
 					Trace.TraceInformation("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
-					Console.Out.WriteLine("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
+					s_logHelper.WriteLineOut("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
 
 					int compressedCount = 0, deletedCount = 0;
 
@@ -563,156 +585,22 @@ namespace Smartgeek.LogRotator
 					});
 
 					Trace.TraceInformation("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
-					Console.Out.WriteLine("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
+					s_logHelper.WriteLineOut("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
 				}
 				else
 				{
 					Trace.TraceInformation("{0}: no file to compress", folder.ID);
-					Console.Out.WriteLine("{0}: no file to compress", folder.ID);
+					s_logHelper.WriteLineOut("{0}: no file to compress", folder.ID);
 				}
 			}
 		}
-
-		// TODO predictive way of finding log files
-		//private static void ProcessFolder2(Folder folder)
-		//{
-		//    Debug.WriteLine(
-		//        "Folder: Enabled={0}, IsCustomFormat={1}, Directory={2}, FileLogFormat={3}, Period={4}, IsLocalTimeRollover={5}, TruncateSize={6}",
-		//        folder.Enabled,
-		//        folder.IsCustomFormat,
-		//        folder.Directory,
-		//        folder.FileLogFormat,
-		//        folder.Period,
-		//        folder.IsLocalTimeRollover,
-		//        folder.TruncateSize
-		//    );
-
-		//    if (!folder.Enabled)
-		//    {
-		//        Console.Out.WriteLine("Skipping folder {0} because logging is disabled", folder.Directory);
-		//        return;
-		//    }
-
-		//    if (folder.IsCustomFormat)
-		//    {
-		//        Console.Out.WriteLine("Skipping folder {0} because custom logging is used", folder.Directory);
-		//        return;
-		//    }
-
-		//    // specific site rotation settings or default settings
-		//    RotationSettingsElement settings;
-		//    if (folder.SiteID.HasValue)
-		//    {
-		//        settings = RuntimeConfig.Rotation.GetSiteSettingsOrDefault(folder.SiteID.Value);
-		//    }
-		//    else
-		//    {
-		//        settings = RuntimeConfig.Rotation.DefaultSettings;
-		//    }
-
-		//    // datetime references
-		//    bool useUTC = !folder.IsLocalTimeRollover;
-		//    DateTime now = useUTC ? DateTime.Now.ToUniversalTime() : DateTime.Now;
-		//    DateTime compressAfterDate = settings.Compress ? now.AddDays(settings.CompressAfter) : DateTime.MaxValue;
-		//    DateTime deleteAfterDate = settings.Delete ? now.AddDays(settings.DeleteAfter) : DateTime.MaxValue;
-
-		//    // file size rollover
-		//    if (folder.Period == Folder.PeriodType.MaxSize)
-		//    {
-		//        for (int index = 1; ; index++)
-		//        {
-		//            String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index));
-		//            String compressedFilename = String.Concat(filename, ".zip");
-		//            String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, index + 1));
-
-		//            // break on last log file extent
-		//            // we don't know if IIS is still using it
-		//            if (!File.Exists(nextFilename))
-		//            {
-		//                Console.Out.Write("Skipping last file {0}", filename);
-		//                Trace.TraceInformation("{0} skipped (last file)", filename);
-		//                break;
-		//            }
-
-		//            FileInfo fi = new FileInfo(filename);
-		//            FileInfo fic = new FileInfo(compressedFilename);
-
-		//            if (!fi.Exists && !fic.Exists)
-		//            {
-		//                break;
-		//            }
-
-		//            // deletion
-		//            if ((useUTC && fi.CreationTimeUtc > deleteAfterDate) || (!useUTC && fi.CreationTime > deleteAfterDate))
-		//            {
-		//                Delete(fi);
-		//            }
-		//            if ((useUTC && fic.CreationTimeUtc > deleteAfterDate) || (!useUTC && fic.CreationTime > deleteAfterDate))
-		//            {
-		//                Delete(fic);
-		//            }
-
-		//            // compression
-		//            if ((useUTC && fi.CreationTimeUtc > compressAfterDate) || (!useUTC && fi.CreationTime > compressAfterDate))
-		//            {
-		//                if (Compress(fi, fic))
-		//                {
-		//                    Delete(fi);
-		//                }
-		//            }
-		//        }
-		//    }
-		//    // time-based rollover
-		//    else
-		//    {
-		//        DateTime reference = now, lastReference = reference, nextReference;
-		//        FileInfo lastReferenceFileInfo = null;
-
-		//        do
-		//        {
-		//            switch (folder.Period)
-		//            {
-		//                case Folder.PeriodType.Hourly: reference = reference.AddHours(-1d); nextReference = reference.AddHours(-1d); break;
-		//                case Folder.PeriodType.Daily: reference = reference.AddDays(-1d); nextReference = reference.AddDays(-1d); break;
-		//                case Folder.PeriodType.Weekly: reference = reference.AddDays(-7d); nextReference = reference.AddDays(-7d); break;
-		//                case Folder.PeriodType.Monthly: reference = reference.AddMonths(-1); nextReference = reference.AddMonths(-1); break;
-		//                default: throw new NotImplementedException("Period " + folder.Period + " is not yet implemented");
-		//            }
-
-		//            String filename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, reference, reference.GetWeekOfMonth()));
-		//            String compressedFilename = String.Concat(filename, ".zip");
-		//            String nextFilename = Path.Combine(folder.Directory, String.Format(folder.FileLogFormat, nextReference, nextReference.GetWeekOfMonth()));
-
-		//            FileInfo fi = new FileInfo(filename);
-		//            FileInfo fic = new FileInfo(compressedFilename);
-
-		//            if (!fi.Exists && !fic.Exists)
-		//            {
-		//                if (lastReference - reference > TimeSpan.FromDays(730d))
-		//                {
-		//                    if (lastReferenceFileInfo != null)
-		//                        Trace.TraceInformation("No more log file found in {0}. Last one was {1}", folder.Directory, lastReferenceFileInfo.Name);
-		//                    else
-		//                        Trace.TraceInformation("No log file found in {0}", folder.Directory);
-		//                    break;
-		//                }
-		//            }
-		//            else
-		//            {
-		//                lastReference = reference;
-		//                lastReferenceFileInfo = fi.Exists ? fi : fic;
-		//            }
-		//        }
-		//        while (true);
-		//    }
-		//}
 
 		private static bool Delete(FileLogInfo fileLog, DeleteReasonType reasonType)
 		{
 			Trace.TraceInformation("{0} deleting (reason: {1})...", fileLog.File.FullName, reasonType);
 			try
 			{
-				if (!SimulationMode)
+				if (!s_simulationMode)
 				{
 					fileLog.File.Delete();
 					fileLog.File.Refresh();
@@ -740,7 +628,7 @@ namespace Smartgeek.LogRotator
 			{
 				if (compressedFileInfo.Exists)
 				{
-					if (!SimulationMode)
+					if (!s_simulationMode)
 					{
 						Trace.TraceInformation("{0} deleted (overwrite)", fileLog.File.FullName);
 						compressedFileInfo.Delete();
@@ -756,7 +644,7 @@ namespace Smartgeek.LogRotator
 					zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
 					zip.AddFile(fileLog.File.FullName, String.Empty);
 
-					if (!SimulationMode)
+					if (!s_simulationMode)
 					{
 						zip.Save();
 						Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
@@ -769,7 +657,7 @@ namespace Smartgeek.LogRotator
 				
 				compressedFileInfo.Refresh();
 
-				if (compressedFileInfo.Exists && !SimulationMode)
+				if (compressedFileInfo.Exists && !s_simulationMode)
 				{
 					compressedFileInfo.CreationTimeUtc = fileLog.File.CreationTimeUtc;
 					compressedFileInfo.LastWriteTimeUtc = fileLog.File.LastWriteTimeUtc;

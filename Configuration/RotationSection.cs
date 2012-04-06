@@ -10,6 +10,7 @@ namespace Smartgeek.LogRotator.Configuration
 	{
 		private static readonly ConfigurationElementProperty s_elemProperty;
 		private static readonly ConfigurationPropertyCollection s_properties;
+		private static readonly ConfigurationProperty s_propEnableEventLog;
 		private static readonly ConfigurationProperty s_propDefaultSettings;
 		private static readonly ConfigurationProperty s_propSitesSettings;
 
@@ -20,6 +21,13 @@ namespace Smartgeek.LogRotator.Configuration
 					typeof(RotationSection),
 					new ValidatorCallback(RotationSection.Validate)
 				)
+			);
+
+			s_propEnableEventLog = new ConfigurationProperty(
+				"enableEventLog",
+				typeof(bool),
+				false,
+				ConfigurationPropertyOptions.None
 			);
 
 			s_propDefaultSettings = new ConfigurationProperty(
@@ -37,6 +45,7 @@ namespace Smartgeek.LogRotator.Configuration
 			);
 
 			s_properties = new ConfigurationPropertyCollection();
+			s_properties.Add(s_propEnableEventLog);
 			s_properties.Add(s_propDefaultSettings);
 			s_properties.Add(s_propSitesSettings);
 		}
@@ -54,6 +63,12 @@ namespace Smartgeek.LogRotator.Configuration
 		private static void Validate(object value)
 		{
 			//RotationSection section = (RotationSection)value;
+		}
+
+		public bool EnableEventLog
+		{
+			get { return ((bool)(this[s_propEnableEventLog])); }
+			set { this[s_propEnableEventLog] = value; }
 		}
 
 		public RotationSettingsElement DefaultSettings
