@@ -350,21 +350,37 @@ namespace Smartgeek.LogRotator
 				#endregion
 
 				#region system.ftpServer/log
-				ConfigurationSection ftpServerLogSection = config.GetSection("system.ftpServer/log");
 
-				// FTP central log file ?
 				bool isFtpServerCentralW3C = false;
+				bool isFtpServerUTF8 = false;
 				ConfigurationElement ftpServerCentralLogFile = null;
-				ConfigurationAttribute ftpServerCentralLogFileModeAttr = ftpServerLogSection.GetAttribute("centralLogFileMode");
-				switch ((int)ftpServerCentralLogFileModeAttr.Value)
+
+				// check for FTP 7.5 feature
+				bool isFtpSvc75 = (config.RootSectionGroup.SectionGroups["system.ftpServer"] != null);
+
+				if (isFtpSvc75)
 				{
-					case 0: break;
-					case 1: isFtpServerCentralW3C = true; ftpServerCentralLogFile = ftpServerLogSection.GetChildElement("centralLogFile"); break;
-					default: throw new NotSupportedException("The value " + ftpServerCentralLogFileModeAttr.Value + " for system.ftpServer/log/@centralLogFileMode is not supported");
+					Trace.TraceInformation("FTPSVC (7.5) feature found");
+
+					ConfigurationSection ftpServerLogSection = config.GetSection("system.ftpServer/log");
+
+					// FTP central log file ?
+					ConfigurationAttribute ftpServerCentralLogFileModeAttr = ftpServerLogSection.GetAttribute("centralLogFileMode");
+					switch ((int)ftpServerCentralLogFileModeAttr.Value)
+					{
+						case 0: break;
+						case 1: isFtpServerCentralW3C = true; ftpServerCentralLogFile = ftpServerLogSection.GetChildElement("centralLogFile"); break;
+						default: throw new NotSupportedException("The value " + ftpServerCentralLogFileModeAttr.Value + " for system.ftpServer/log/@centralLogFileMode is not supported");
+					}
+
+					// server-wide FTP log files encoding
+					isFtpServerUTF8 = (bool)ftpServerLogSection.GetAttributeValue("logInUTF8");
+				}
+				else
+				{
+					Trace.TraceInformation("FTPSVC (7.5) feature not found");
 				}
 
-				// server-wide FTP log files encoding
-				bool isFtpServerUTF8 = (bool)ftpServerLogSection.GetAttributeValue("logInUTF8");
 				#endregion
 
 				if (isCentralW3C || isCentralBinary)
@@ -378,7 +394,7 @@ namespace Smartgeek.LogRotator
 					));
 				}
 
-				if (isFtpServerCentralW3C)
+				if (isFtpSvc75 && isFtpServerCentralW3C)
 				{
 					folders.Add(Folder.Create(
 						ftpServerCentralLogFile,
@@ -388,7 +404,7 @@ namespace Smartgeek.LogRotator
 					));
 				}
 
-				if (!isCentralW3C || !isCentralBinary || !isFtpServerCentralW3C)
+				if (!isCentralW3C || !isCentralBinary || (isFtpSvc75 && !isFtpServerCentralW3C))
 				{
 					// per-site log file processing
 					ConfigurationSection sitesSection = config.GetSection("system.applicationHost/sites");
@@ -424,7 +440,7 @@ namespace Smartgeek.LogRotator
 							return StringComparer.InvariantCultureIgnoreCase.Equals(protocol, "ftp");
 						});
 
-						if (isFtpSite && !isFtpServerCentralW3C)
+						if (isFtpSvc75 && isFtpSite && !isFtpServerCentralW3C)
 						{
 							ConfigurationElement ftpServer = site.GetChildElement("ftpServer");
 							ConfigurationElement ftpServerLogFile = ftpServer.GetChildElement("logFile");
