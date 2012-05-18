@@ -52,28 +52,33 @@ namespace Smartgeek.LogRotator
 
 				List<Folder> folders = new List<Folder>();
 
-				if (Environment.OSVersion.Version.Major == 6)
-				{
-					s_logHelper.WriteLineOut("Reading IIS 6.0 configuration...");
-					Trace.TraceInformation("Reading IIS 6.0 configuration...");
-					AddIis6xFolders(folders, skipHttp: true, skipFtp: true);
+				String iisVersionInfo = Environment.OSVersion.GetIisVersionString();
+				Trace.TraceInformation("OS Version: {0}", Environment.OSVersion);
+				Trace.TraceInformation("IIS Version: {0}", iisVersionInfo);
 
-					s_logHelper.WriteLineOut("Reading IIS 7.x configuration...");
-					Trace.TraceInformation("Reading IIS 7.x configuration...");
+				if (Environment.OSVersion.Version.Major >= 6)
+				{
+					if (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 1)
+					{
+						s_logHelper.WriteLineOut("Windows NT 6.2 or newer platforms haven't been widely tests");
+						Trace.TraceWarning("Untested Windows version");
+					}
+
+					bool skipLegacyFtpSvc = (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 0);
+
+					s_logHelper.WriteLineOut("Reading {0} legacy configuration...", iisVersionInfo);
+					Trace.TraceInformation("Reading {0} legacy configuration...", iisVersionInfo);
+					AddIisLegacyFolders(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
+
+					s_logHelper.WriteLineOut("Reading {0} modern configuration...", iisVersionInfo);
+					Trace.TraceInformation("Reading {0} modern configuration...", iisVersionInfo);
 					AddIis7xFolders(folders);
 				}
-				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 1)
+				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor >= 1)
 				{
-					s_logHelper.WriteLineOut("Reading IIS 5.x configuration...");
-					Trace.TraceInformation("Reading IIS 5.x configuration...");
-					AddIis6xFolders(folders);
-				}
-				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor == 2)
-				{
-					s_logHelper.WriteLineOut("Reading IIS 6.x configuration...");
-					Trace.TraceInformation("Reading IIS 6.x configuration...");
-					// IIS 6.0 is quite the same as IIS 5.0, so please don't blame me for this naming ^^
-					AddIis6xFolders(folders);
+					s_logHelper.WriteLineOut("Reading {0} legacy configuration...", iisVersionInfo);
+					Trace.TraceInformation("Reading {0} legacy configuration...", iisVersionInfo);
+					AddIisLegacyFolders(folders);
 				}
 				else
 				{
@@ -106,7 +111,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void AddIis6xFolders(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
+		private static void AddIisLegacyFolders(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
 		{
 			using (DirectoryEntry lm = new DirectoryEntry(@"IIS://localhost"))
 			{

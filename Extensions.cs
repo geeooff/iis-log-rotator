@@ -72,5 +72,30 @@ namespace Smartgeek.LogRotator
 			}
 			return defaultValue;
 		}
+
+		public static String GetIisVersionString(this OperatingSystem os)
+		{
+			switch (os.Version.Major)
+			{
+				case 5:
+					switch (os.Version.Minor)
+					{
+						case 0: return "IIS 5.0";
+						case 1: return "IIS 5.1";
+						case 2: return "IIS 6.0";
+					}
+					break;
+
+				case 6:
+					switch (os.Version.Minor)
+					{
+						case 0: return "IIS 7.0";
+						case 1: return "IIS 7.5";
+						case 2: return "IIS 8.0";
+					}
+					break;
+			}
+			return "unknown IIS version";
+		}
 	}
 }
