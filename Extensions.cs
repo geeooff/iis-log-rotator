@@ -6,6 +6,9 @@ using Microsoft.Web.Administration;
 using System.Globalization;
 using System.IO;
 using System.DirectoryServices;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using Smartgeek.LogRotator.Resources;
 
 namespace Smartgeek.LogRotator
 {
@@ -95,7 +98,7 @@ namespace Smartgeek.LogRotator
 					}
 					break;
 			}
-			return "unknown IIS version";
+			return Strings.MsgUnknownIisVersionString;
 		}
 	}
 }

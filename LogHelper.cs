@@ -75,7 +75,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		public void WriteLineOut(String text)
+		public void WriteLineOut(String text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(text);
 
@@ -83,9 +83,11 @@ namespace Smartgeek.LogRotator
 			{
 				_eventMessageBuilder.AppendLine(text);
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineOut(String format, Object arg0)
+		public void WriteLineOut(String format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0);
 
@@ -94,9 +96,11 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0);
 				_eventMessageBuilder.AppendLine();
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineOut(String format, Object arg0, Object arg1)
+		public void WriteLineOut(String format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1);
 
@@ -105,9 +109,11 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0, arg1);
 				_eventMessageBuilder.AppendLine();
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineOut(String format, Object arg0, Object arg1, Object arg2)
+		public void WriteLineOut(String format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1, arg2);
 
@@ -116,17 +122,8 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0, arg1, arg2);
 				_eventMessageBuilder.AppendLine();
 			}
-		}
 
-		public void WriteLineOut(String format, params Object[] args)
-		{
-			Console.Out.WriteLine(format, args);
-
-			if (_eventLogEnabled)
-			{
-				_eventMessageBuilder.AppendFormat(format, args);
-				_eventMessageBuilder.AppendLine();
-			}
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1, arg2);
 		}
 
 		public void WriteLineError()
@@ -143,7 +140,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		public void WriteLineError(String text)
+		public void WriteLineError(String text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(text);
 
@@ -155,9 +152,11 @@ namespace Smartgeek.LogRotator
 				}
 				_eventMessageBuilder.AppendLine(text);
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineError(String format, Object arg0)
+		public void WriteLineError(String format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0);
 
@@ -170,9 +169,11 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0);
 				_eventMessageBuilder.AppendLine();
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineError(String format, Object arg0, Object arg1)
+		public void WriteLineError(String format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1);
 
@@ -185,9 +186,11 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0, arg1);
 				_eventMessageBuilder.AppendLine();
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineError(String format, Object arg0, Object arg1, Object arg2)
+		public void WriteLineError(String format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1, arg2);
 
@@ -200,21 +203,22 @@ namespace Smartgeek.LogRotator
 				_eventMessageBuilder.AppendFormat(format, arg0, arg1, arg2);
 				_eventMessageBuilder.AppendLine();
 			}
+
+			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1, arg2);
 		}
 
-		public void WriteLineError(String format, params Object[] args)
+		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, String text)
 		{
-			Console.Error.WriteLine(format, args);
+			if (traceInformation) Trace.TraceInformation(text);
+			if (traceWarning) Trace.TraceWarning(text);
+			if (traceError) Trace.TraceError(text);
+		}
 
-			if (_eventLogEnabled)
-			{
-				if (_eventLogEntryType != EventLogEntryType.Error)
-				{
-					_eventLogEntryType = EventLogEntryType.Error;
-				}
-				_eventMessageBuilder.AppendFormat(format, args);
-				_eventMessageBuilder.AppendLine();
-			}
+		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, String format, params Object[] args)
+		{
+			if (traceInformation) Trace.TraceInformation(format, args);
+			if (traceWarning) Trace.TraceWarning(format, args);
+			if (traceError) Trace.TraceError(format, args);
 		}
 	}
 }

@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Globalization;
 using System.Diagnostics;
-using System.IO;
 using System.DirectoryServices;
-
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Web.Administration;
 using Smartgeek.LogRotator.Configuration;
+using Smartgeek.LogRotator.Resources;
 
 namespace Smartgeek.LogRotator
 {
@@ -27,9 +28,9 @@ namespace Smartgeek.LogRotator
 
 					if (s_simulationMode)
 					{
-						s_logHelper.WriteLineOut("Simulation Mode");
+						s_logHelper.WriteLineOut(Strings.MsgSimulationMode, traceWarning: true);
 						s_logHelper.WriteLineOut();
-						Trace.TraceInformation("Simulation Mode");
+						Trace.TraceInformation(Strings.MsgSimulationMode);
 					}
 				}
 
@@ -44,8 +45,7 @@ namespace Smartgeek.LogRotator
 
 				if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				{
-					s_logHelper.WriteLineError("Must be a Windows NT platform");
-					Trace.TraceWarning("Abort: PlatformID = {0}", Environment.OSVersion.Platform);
+					s_logHelper.WriteLineError(Strings.MsgRequireWindowsNT, Environment.OSVersion.Platform, traceError: true);
 					Environment.ExitCode = -1;
 					return;
 				}
@@ -53,37 +53,57 @@ namespace Smartgeek.LogRotator
 				List<Folder> folders = new List<Folder>();
 
 				String iisVersionInfo = Environment.OSVersion.GetIisVersionString();
-				Trace.TraceInformation("OS Version: {0}", Environment.OSVersion);
-				Trace.TraceInformation("IIS Version: {0}", iisVersionInfo);
+				Trace.TraceInformation(Strings.MsgSummaryWindowsVersion, Environment.OSVersion);
+				Trace.TraceInformation(Strings.MsgSummaryIisVersion, iisVersionInfo);
 
 				if (Environment.OSVersion.Version.Major >= 6)
 				{
-					if (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 1)
+					if (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 2)
 					{
-						s_logHelper.WriteLineOut("Windows NT 6.2 or newer platforms haven't been widely tests");
-						Trace.TraceWarning("Untested Windows version");
+						s_logHelper.WriteLineOut(Strings.MsgUnknownWindowsVersion, traceWarning: true);
 					}
 
 					bool skipLegacyFtpSvc = (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 0);
 
-					s_logHelper.WriteLineOut("Reading {0} legacy configuration...", iisVersionInfo);
-					Trace.TraceInformation("Reading {0} legacy configuration...", iisVersionInfo);
-					AddIisLegacyFolders(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
+					s_logHelper.WriteLineOut(Strings.MsgReadingAdsiConfig, iisVersionInfo, traceInfo: true);
 
-					s_logHelper.WriteLineOut("Reading {0} modern configuration...", iisVersionInfo);
-					Trace.TraceInformation("Reading {0} modern configuration...", iisVersionInfo);
-					AddIis7xFolders(folders);
+					try
+					{
+						AddFoldersFromAdsi(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
+					}
+					catch (Exception ex)
+					{
+						Die(s_logHelper, Strings.MsgAdsiAccessDenied, Strings.MsgCriticalException, ex);
+					}
+
+					s_logHelper.WriteLineOut(Strings.MsgReadingServerManagerConfig, iisVersionInfo, traceInfo: true);
+
+					try
+					{
+						AddFoldersFromServerManager(folders);
+					}
+					catch (Exception ex)
+					{
+						Die(s_logHelper, Strings.MsgServerManagerAccessDenied, Strings.MsgCriticalException, ex);
+					}
 				}
 				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor >= 1)
 				{
-					s_logHelper.WriteLineOut("Reading {0} legacy configuration...", iisVersionInfo);
-					Trace.TraceInformation("Reading {0} legacy configuration...", iisVersionInfo);
-					AddIisLegacyFolders(folders);
+					s_logHelper.WriteLineOut(Strings.MsgReadingAdsiConfig, iisVersionInfo, traceInfo: true);
+
+					try
+					{
+						AddFoldersFromAdsi(folders);
+					}
+					catch (Exception ex)
+					{
+						Die(s_logHelper, Strings.MsgAdsiAccessDenied, Strings.MsgCriticalException, ex);
+					}
 				}
 				else
 				{
-					s_logHelper.WriteLineError("Must be a Windows NT 5.1 or newer");
-					Trace.TraceWarning("Abort: OSVersion = {0}", Environment.OSVersion);
+					String message = String.Format(Strings.MsgRequireNewerWindows, Environment.OSVersion);
+					s_logHelper.WriteLineError(message, traceError: true);
 					Environment.Exit(-1);
 				}
 
@@ -91,44 +111,32 @@ namespace Smartgeek.LogRotator
 
 				if (folders.Count > 0)
 				{
-					s_logHelper.WriteLineOut("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
-					Trace.TraceInformation("{0} folder{1} to process:", folders.Count, folders.Count > 1 ? "s" : "");
+					s_logHelper.WriteLineOut(Strings.MsgXFoldersToProcess, folders.Count, folders.Count > 1 ? Plurals.Folders : Plurals.Folder, traceInfo: true);
 					folders.ForEach(WriteFolderInfo);
 
 					s_logHelper.WriteLineOut();
-					s_logHelper.WriteLineOut("Processing:");
+					s_logHelper.WriteLineOut(Strings.MsgProcessing);
 
 					folders.ForEach(ProcessFolder);
 				}
 				else
 				{
-					s_logHelper.WriteLineOut("No folder read from IIS");
-					Trace.TraceWarning("No folder read from IIS");
+					s_logHelper.WriteLineOut(Strings.MsgNoFolderToProcess, traceWarning: true);
 				}
 
 				s_logHelper.WriteLineOut();
-				s_logHelper.WriteLineOut("End");
+				s_logHelper.WriteLineOut(Strings.MsgEnd);
 			}
 		}
 
-		private static void AddIisLegacyFolders(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
+		private static void AddFoldersFromAdsi(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
 		{
 			using (DirectoryEntry lm = new DirectoryEntry(@"IIS://localhost"))
 			{
 				if (!skipHttp)
 				{
 					#region /LM/W3SVC
-					DirectoryEntry w3svc = null;
-
-					try
-					{
-						w3svc = lm.Children.Find("W3SVC", "IisWebService");
-						Trace.TraceInformation("W3SVC feature found");
-					}
-					catch (Exception ex)
-					{
-						Trace.TraceInformation("W3SVC feature not found ({0})", ex.Message);
-					}
+					DirectoryEntry w3svc = GetIisFeature(lm, "W3SVC", "IisWebService");
 
 					if (w3svc != null)
 					{
@@ -191,18 +199,8 @@ namespace Smartgeek.LogRotator
 				if (!skipFtp)
 				{
 					#region /LM/MSFTPSVC
-					DirectoryEntry msftpsvc = null;
-
-					try
-					{
-						msftpsvc = lm.Children.Find("MSFTPSVC", "IisFtpService");
-						Trace.TraceInformation("MSFTPSVC feature found");
-					}
-					catch (Exception ex)
-					{
-						Trace.TraceInformation("MSFTPSVC feature not found ({0})", ex.Message);
-					}
-
+					DirectoryEntry msftpsvc = GetIisFeature(lm, "MSFTPSVC", "IIsFtpServer");
+					
 					if (msftpsvc != null)
 					{
 						try
@@ -240,17 +238,7 @@ namespace Smartgeek.LogRotator
 				if (!skipSmtp)
 				{
 					#region /LM/SMTPSVC
-					DirectoryEntry smtpsvc = null;
-
-					try
-					{
-						smtpsvc = lm.Children.Find("SMTPSVC", "IIsSmtpService");
-						Trace.TraceInformation("SMTPSVC feature found");
-					}
-					catch (Exception ex)
-					{
-						Trace.TraceInformation("SMTPSVC feature not found ({0})", ex.Message);
-					}
+					DirectoryEntry smtpsvc = GetIisFeature(lm, "SMTPSVC", "IIsSmtpService"); ;
 
 					if (smtpsvc != null)
 					{
@@ -283,17 +271,7 @@ namespace Smartgeek.LogRotator
 				if (!skipNntp)
 				{
 					#region /LM/NNTPSVC
-					DirectoryEntry nntpsvc = null;
-
-					try
-					{
-						nntpsvc = lm.Children.Find("NNTPSVC", "IIsNntpService");
-						Trace.TraceInformation("NNTPSVC feature found");
-					}
-					catch (Exception ex)
-					{
-						Trace.TraceInformation("NNTPSVC feature not found ({0})", ex.Message);
-					}
+					DirectoryEntry nntpsvc = GetIisFeature(lm, "NNTPSVC", "IIsNntpService");
 
 					if (nntpsvc != null)
 					{
@@ -327,7 +305,31 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void AddIis7xFolders(List<Folder> folders)
+		private static DirectoryEntry GetIisFeature(DirectoryEntry lm, String name, String schemaClassName)
+		{
+			DirectoryEntry entry = null;
+
+			try
+			{
+				entry = lm.Children.Find(name, schemaClassName);
+				s_logHelper.WriteLineOut(Strings.MsgIisFeatureFound, name, traceInfo: true);
+			}
+			catch (DirectoryNotFoundException ex)
+			{
+				Trace.TraceInformation(Strings.MsgIisFeatureNotFound, name, ex.Message);
+			}
+			catch (DirectoryServicesCOMException ex)
+			{
+				if (ex.ErrorCode == 0x2030)
+					Trace.TraceInformation(Strings.MsgIisFeatureNotFound, name, ex.Message);
+				else
+					throw ex;
+			}
+
+			return entry;
+		}
+
+		private static void AddFoldersFromServerManager(List<Folder> folders)
 		{
 			using (ServerManager serverManager = new ServerManager())
 			{
@@ -365,7 +367,7 @@ namespace Smartgeek.LogRotator
 
 				if (isFtpSvc75)
 				{
-					Trace.TraceInformation("FTPSVC (7.5) feature found");
+					Trace.TraceInformation(Strings.MsgFtpSvcFeatureFound);
 
 					ConfigurationSection ftpServerLogSection = config.GetSection("system.ftpServer/log");
 
@@ -383,7 +385,7 @@ namespace Smartgeek.LogRotator
 				}
 				else
 				{
-					Trace.TraceInformation("FTPSVC (7.5) feature not found");
+					Trace.TraceInformation(Strings.MsgFtpSvcFeatureFound);
 				}
 
 				#endregion
@@ -463,43 +465,28 @@ namespace Smartgeek.LogRotator
 
 		private static void WriteFolderInfo(Folder folder)
 		{
-			Trace.TraceInformation(
-				"{0}: Period = {1}, Format = {2}, Folder = {3}",
-				folder.ID,
-				folder.Period,
-				folder.FilenameFormat,
-				folder.Directory
-			);
-			s_logHelper.WriteLineOut(
-				"{0}: Period = {1}, Format = {2}, Folder = {3}",
-				folder.ID,
-				folder.Period,
-				folder.FilenameFormat,
-				folder.Directory
-			);
+			String message = String.Format("{0}: Period = {1}, Format = {2}, Folder = {3}", folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
+			s_logHelper.WriteLineOut(message, traceInfo: true);
 		}
 
 		private static void ProcessFolder(Folder folder)
 		{
 			if (!folder.Enabled)
 			{
-				Trace.TraceInformation("{0}: skipping because logging is disabled", folder.ID);
-				s_logHelper.WriteLineOut("{0}: skipping because logging is disabled", folder.ID);
+				s_logHelper.WriteLineOut("{0}: skipping because logging is disabled", folder.ID, traceInfo: true);
 				return;
 			}
 
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
-				Trace.TraceInformation("{0}: because custom logging is used", folder.ID);
-				s_logHelper.WriteLineOut("{0}: because custom logging is used", folder.ID);
+				s_logHelper.WriteLineOut("{0}: skipping because custom logging is used", folder.ID, traceInfo: true);
 				return;
 			}
 
 			DirectoryInfo di = new DirectoryInfo(folder.Directory);
 			if (!di.Exists)
 			{
-				Trace.TraceInformation("{0}: folder not found", folder.ID);
-				s_logHelper.WriteLineOut("{0}: folder not found", folder.ID);
+				s_logHelper.WriteLineOut("{0}: folder not found", folder.ID, traceInfo: true);
 				return;
 			}
 			
@@ -508,8 +495,7 @@ namespace Smartgeek.LogRotator
 
 			if (!settings.Compress && !settings.Delete)
 			{
-				Trace.TraceInformation("{0}: skipping because compression and deletion are disabled", folder.ID);
-				s_logHelper.WriteLineOut("{0}: skipping because compression and deletion are disabled", folder.ID);
+				s_logHelper.WriteLineOut("{0}: skipping because compression and deletion are disabled", folder.ID, traceInfo: true);
 				return;
 			}
 
@@ -524,7 +510,10 @@ namespace Smartgeek.LogRotator
 			if (logFiles.Count > 0)
 			{
 				// it's generaly safer to skip the latest log file because we don't know if IIS is still using it
-				logFiles.RemoveAt(logFiles.Count - 1);
+				int lastIndex = logFiles.Count - 1;
+				FileLogInfo lastLogFile = logFiles[lastIndex];
+				logFiles.RemoveAt(lastIndex);
+				s_logHelper.WriteLineOut("{0}: skipping {1} log file because it's the latest one", folder.ID, lastLogFile.File.Name, traceInfo: true);
 			}
 
 			// get compressed log files
@@ -553,8 +542,7 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToDelete.Count > 0)
 				{
-					Trace.TraceInformation("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
-					s_logHelper.WriteLineOut("{0}: {1} log files to delete...", folder.ID, logFilesToDelete.Count);
+					s_logHelper.WriteLineOut("{0}: {1} {2} to delete...", folder.ID, logFilesToDelete.Count, logFilesToDelete.Count > 1 ? "log files" : "log file", traceInfo: true);
 
 					int deletedCount = 0;
 
@@ -566,8 +554,7 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("{0}: {1} log files deleted", folder.ID, deletedCount);
-					s_logHelper.WriteLineOut("{0}: {1} log files deleted", folder.ID, deletedCount);
+					s_logHelper.WriteLineOut("{0}: {1} {2} deleted", folder.ID, deletedCount, deletedCount > 1 ? "log files" : "log file", traceInfo: true);
 				}
 				else
 				{
@@ -588,8 +575,7 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToCompress.Count > 0)
 				{
-					Trace.TraceInformation("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
-					s_logHelper.WriteLineOut("{0}: {1} log files to compress...", folder.ID, logFilesToCompress.Count);
+					s_logHelper.WriteLineOut("{0}: {1} {2} to compress...", folder.ID, logFilesToCompress.Count, logFilesToCompress.Count > 1 ? "log files" : "log file", traceInfo: true);
 
 					int compressedCount = 0, deletedCount = 0;
 
@@ -605,13 +591,11 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					Trace.TraceInformation("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
-					s_logHelper.WriteLineOut("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount);
+					s_logHelper.WriteLineOut("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount, traceInfo: true);
 				}
 				else
 				{
-					Trace.TraceInformation("{0}: no file to compress", folder.ID);
-					s_logHelper.WriteLineOut("{0}: no file to compress", folder.ID);
+					s_logHelper.WriteLineOut("{0}: no file to compress", folder.ID, traceInfo: true);
 				}
 			}
 		}
@@ -629,6 +613,7 @@ namespace Smartgeek.LogRotator
 				}
 				else
 				{
+					// TODO check for file deletion permission
 					Trace.TraceInformation("{0} not deleted (simulation mode)", fileLog.File.FullName);
 				}				
 				return true;
@@ -656,6 +641,7 @@ namespace Smartgeek.LogRotator
 					}
 					else
 					{
+						// TODO check for file deletion permission
 						Trace.TraceInformation("{0} not deleted (overwrite, simulation mode)", fileLog.File.FullName);
 					}
 				}
@@ -672,6 +658,7 @@ namespace Smartgeek.LogRotator
 					}
 					else
 					{
+						// TODO check for file compression permission
 						Trace.TraceInformation("{0} not compressed (simulation mode)", fileLog.File.FullName);
 					}
 				}
@@ -692,6 +679,23 @@ namespace Smartgeek.LogRotator
 				Trace.TraceError(ex.ToString());
 				return false;
 			}
+		}
+
+		private static void Die(LogHelper logHelper, String messageIfAccessDenied, String messageIfUnhandledException, Exception ex)
+		{
+			if (ex is UnauthorizedAccessException || (ex is COMException && ((COMException)ex).ErrorCode == -2147024891)) // 0x80070005
+			{
+				logHelper.WriteLineOut(messageIfAccessDenied, traceError: true);
+			}
+			else
+			{
+				logHelper.WriteLineError(messageIfUnhandledException, traceError: true);
+			}
+#if DEBUG
+			Debug.Fail(messageIfAccessDenied, ex.ToString());
+#else
+			throw ex;
+#endif
 		}
 	}
 }
