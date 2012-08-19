@@ -135,183 +135,46 @@ namespace Smartgeek.LogRotator
 			{
 				if (!skipHttp)
 				{
-					#region /LM/W3SVC
-					DirectoryEntry w3svc = GetIisFeature(lm, "W3SVC", "IisWebService");
-
-					if (w3svc != null)
-					{
-						try 
-						{
-							bool isCentralW3C = false, isCentralBinary = false, isUTF8 = false;
-
-							// NT 5.2 or newer features
-							if (Environment.OSVersion.Version >= new Version(5, 2))
-							{
-								// central log file is available starting with NT 5.2 SP1
-								if (Environment.OSVersion.Version > new Version(5, 2)
-									|| Environment.OSVersion.Version == new Version(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack))
-								{
-									isCentralW3C = (bool)w3svc.Properties["CentralW3CLoggingEnabled"].Value;
-									isCentralBinary = (bool)w3svc.Properties["CentralBinaryLoggingEnabled"].Value;
-								}
-
-								// UTF-8 encoding is available starting with NT 5.2 RTM
-								isUTF8 = (bool)w3svc.Properties["LogInUTF8"].Value;
-							}
-
-							if (isCentralW3C || isCentralBinary)
-							{
-								folders.Add(Folder.Create(
-									w3svc,
-									IisServiceType.W3SVC,
-									isUTF8,
-									isCentralW3C: isCentralW3C,
-									isCentralBinary: isCentralBinary
-								));
-							}
-							else
-							{
-								foreach (DirectoryEntry site in w3svc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsWebServer"))
-								{
-									long siteId = Int64.Parse(site.Name);
-
-									folders.Add(Folder.Create(
-										site,
-										IisServiceType.W3SVC,
-										isUTF8,
-										siteId: siteId
-									));
-
-									site.Close();
-								}
-							}
-
-							w3svc.Close();
-						}
-						finally
-						{
-							w3svc.Dispose();
-						}
-					}
-					#endregion
+					AddFoldersFromAdsi(folders, lm, IisServiceType.W3SVC);
 				}
 
 				if (!skipFtp)
 				{
-					#region /LM/MSFTPSVC
-					DirectoryEntry msftpsvc = GetIisFeature(lm, "MSFTPSVC", "IIsFtpServer");
-					
-					if (msftpsvc != null)
-					{
-						try
-						{
-							// server-level FTP log files encoding
-							bool isFtpUTF8 = (bool)msftpsvc.Properties["FtpLogInUtf8"].Value;
-
-							foreach (DirectoryEntry site in msftpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsFtpServer"))
-							{
-								long siteId = Int64.Parse(site.Name);
-
-								// site-level FTP log files encoding
-								bool isFtpSiteUTF8 = (bool)site.GetPropertyValue<bool>("FtpLogInUtf8", isFtpUTF8);
-
-								folders.Add(Folder.Create(
-									site,
-									IisServiceType.MSFTPSVC,
-									isFtpSiteUTF8,
-									siteId: siteId
-								));
-
-								site.Close();
-							}
-
-							msftpsvc.Close();
-						}
-						finally
-						{
-							msftpsvc.Dispose();
-						} 
-					}
-					#endregion
+					AddFoldersFromAdsi(folders, lm, IisServiceType.MSFTPSVC);
 				}
 
 				if (!skipSmtp)
 				{
-					#region /LM/SMTPSVC
-					DirectoryEntry smtpsvc = GetIisFeature(lm, "SMTPSVC", "IIsSmtpService"); ;
-
-					if (smtpsvc != null)
-					{
-						try
-						{
-							foreach (DirectoryEntry site in smtpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsSmtpServer"))
-							{
-								long siteId = Int64.Parse(site.Name);
-
-								folders.Add(Folder.Create(
-									site,
-									IisServiceType.SMTPSVC,
-									false,
-									siteId: siteId
-								));
-
-								site.Close();
-							}
-
-							smtpsvc.Close();
-						}
-						finally
-						{
-							smtpsvc.Dispose();
-						}
-					}
-					#endregion
+					AddFoldersFromAdsi(folders, lm, IisServiceType.SMTPSVC);
 				}
 
 				if (!skipNntp)
 				{
-					#region /LM/NNTPSVC
-					DirectoryEntry nntpsvc = GetIisFeature(lm, "NNTPSVC", "IIsNntpService");
-
-					if (nntpsvc != null)
-					{
-						try 
-						{
-							foreach (DirectoryEntry site in nntpsvc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == "IIsNntpServer"))
-							{
-								long siteId = Int64.Parse(site.Name);
-
-								folders.Add(Folder.Create(
-									site,
-									IisServiceType.NNTPSVC,
-									false,
-									siteId: siteId
-								));
-
-								site.Close();
-							}
-		    
-							nntpsvc.Close();
-						}
-						finally
-						{
-							nntpsvc.Dispose();
-						}
-					}
-					#endregion
+					AddFoldersFromAdsi(folders, lm, IisServiceType.NNTPSVC);
 				}
 
 				lm.Close();
 			}
 		}
 
-		private static DirectoryEntry GetIisFeature(DirectoryEntry lm, String name, String schemaClassName)
+		private static void AddFoldersFromAdsi(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
 		{
-			DirectoryEntry entry = null;
+			String name = svcType.ToString(), schemaClassName;
+
+			switch (svcType)
+			{
+				case IisServiceType.W3SVC: schemaClassName = "IisWebService"; break;
+				case IisServiceType.MSFTPSVC: schemaClassName = "IisFtpService"; break;
+				case IisServiceType.SMTPSVC: schemaClassName = "IisSmtpService"; break;
+				case IisServiceType.NNTPSVC: schemaClassName = "IisNntpService"; break;
+				default: throw new InvalidOperationException("That type of IIS Service can't be read from ADSI");
+			}
+
+			DirectoryEntry svc = null;
 
 			try
 			{
-				entry = lm.Children.Find(name, schemaClassName);
+				svc = lm.Children.Find(name, schemaClassName);
 				s_logHelper.WriteLineOut(Strings.MsgIisFeatureFound, name, traceInfo: true);
 			}
 			catch (DirectoryNotFoundException ex)
@@ -326,7 +189,73 @@ namespace Smartgeek.LogRotator
 					throw ex;
 			}
 
-			return entry;
+			if (svc != null)
+			{
+				try
+				{
+					bool isCentralW3C = false, isCentralBinary = false, isUTF8 = false;
+
+					// NT 5.2 or newer features for W3SVC
+					if (svcType == IisServiceType.W3SVC && Environment.OSVersion.Version >= new Version(5, 2))
+					{
+						// central log file is available starting with NT 5.2 SP1
+						if (Environment.OSVersion.Version > new Version(5, 2)
+							|| Environment.OSVersion.Version == new Version(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack))
+						{
+							isCentralW3C = (bool)svc.Properties["CentralW3CLoggingEnabled"].Value;
+							isCentralBinary = (bool)svc.Properties["CentralBinaryLoggingEnabled"].Value;
+						}
+
+						// UTF-8 encoding is available starting with NT 5.2 RTM
+						isUTF8 = (bool)svc.Properties["LogInUTF8"].Value;
+					}
+
+					if (isCentralW3C || isCentralBinary)
+					{
+						folders.Add(Folder.Create(
+							svc,
+							svcType,
+							isUTF8,
+							isCentralW3C: isCentralW3C,
+							isCentralBinary: isCentralBinary
+						));
+					}
+					else
+					{
+						// read MSFTPSVC specific config (UTF-8)
+						if (svcType == IisServiceType.MSFTPSVC)
+						{
+							isUTF8 = (bool)svc.Properties["FtpLogInUtf8"].Value;
+						}
+
+						foreach (DirectoryEntry site in svc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == schemaClassName))
+						{
+							long siteId = Int64.Parse(site.Name);
+
+							// site-level FTP log files encoding
+							if (svcType == IisServiceType.MSFTPSVC)
+							{
+								isUTF8 = (bool)site.GetPropertyValue<bool>("FtpLogInUtf8", isUTF8);
+							}
+
+							folders.Add(Folder.Create(
+								site,
+								svcType,
+								isUTF8,
+								siteId: siteId
+							));
+
+							site.Close();
+						}
+					}
+
+					svc.Close();
+				}
+				finally
+				{
+					svc.Dispose();
+				}
+			}
 		}
 
 		private static void AddFoldersFromServerManager(List<Folder> folders)
@@ -465,7 +394,7 @@ namespace Smartgeek.LogRotator
 
 		private static void WriteFolderInfo(Folder folder)
 		{
-			String message = String.Format("{0}: Period = {1}, Format = {2}, Folder = {3}", folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
+			String message = String.Format(Strings.MsgFolderInfo, folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
 			s_logHelper.WriteLineOut(message, traceInfo: true);
 		}
 
@@ -473,20 +402,20 @@ namespace Smartgeek.LogRotator
 		{
 			if (!folder.Enabled)
 			{
-				s_logHelper.WriteLineOut("{0}: skipping because logging is disabled", folder.ID, traceInfo: true);
+				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedLoggingDisabled, folder.ID, traceInfo: true);
 				return;
 			}
 
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
-				s_logHelper.WriteLineOut("{0}: skipping because custom logging is used", folder.ID, traceInfo: true);
+				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedCustomLogging, folder.ID, traceInfo: true);
 				return;
 			}
 
 			DirectoryInfo di = new DirectoryInfo(folder.Directory);
 			if (!di.Exists)
 			{
-				s_logHelper.WriteLineOut("{0}: folder not found", folder.ID, traceInfo: true);
+				s_logHelper.WriteLineOut(Strings.MsgFolderNotFound, folder.ID, traceInfo: true);
 				return;
 			}
 			
@@ -495,7 +424,7 @@ namespace Smartgeek.LogRotator
 
 			if (!settings.Compress && !settings.Delete)
 			{
-				s_logHelper.WriteLineOut("{0}: skipping because compression and deletion are disabled", folder.ID, traceInfo: true);
+				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedNoCompressionNoDeletion, folder.ID, traceInfo: true);
 				return;
 			}
 
@@ -513,7 +442,7 @@ namespace Smartgeek.LogRotator
 				int lastIndex = logFiles.Count - 1;
 				FileLogInfo lastLogFile = logFiles[lastIndex];
 				logFiles.RemoveAt(lastIndex);
-				s_logHelper.WriteLineOut("{0}: skipping {1} log file because it's the latest one", folder.ID, lastLogFile.File.Name, traceInfo: true);
+				s_logHelper.WriteLineOut(Strings.MsgLogFileSkippedLatest, folder.ID, lastLogFile.File.Name, traceInfo: true);
 			}
 
 			// get compressed log files
@@ -537,29 +466,28 @@ namespace Smartgeek.LogRotator
 
 				// filter
 				List<FileLogInfo> logFilesToDelete = new List<FileLogInfo>(
-					logFiles.Union(compressedLogFiles).Where(f => f.File.Exists && f.Date < deleteBeforeDate)
+					logFiles.Union(compressedLogFiles).Where(logFile => logFile.File.Exists && logFile.Date < deleteBeforeDate)
 				);
 
 				if (logFilesToDelete.Count > 0)
 				{
-					s_logHelper.WriteLineOut("{0}: {1} {2} to delete...", folder.ID, logFilesToDelete.Count, logFilesToDelete.Count > 1 ? "log files" : "log file", traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgXLogFilesToDelete, folder.ID, logFilesToDelete.Count, logFilesToDelete.Count > 1 ? Plurals.LogFiles : Plurals.LogFile, traceInfo: true);
 
 					int deletedCount = 0;
 
-					logFilesToDelete.ForEach(delegate(FileLogInfo fileLog)
+					logFilesToDelete.ForEach(logFile =>
 					{
-						if (Delete(fileLog, DeleteReasonType.Obsolete))
+						if (Delete(logFile, DeleteReasonType.Obsolete))
 						{
 							deletedCount++;
 						}
 					});
 
-					s_logHelper.WriteLineOut("{0}: {1} {2} deleted", folder.ID, deletedCount, deletedCount > 1 ? "log files" : "log file", traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgXLogFilesDeleted, folder.ID, deletedCount, deletedCount > 1 ? Plurals.LogFiles : Plurals.LogFile, traceInfo: true);
 				}
 				else
 				{
-					Trace.TraceInformation("{0}: no file to delete", folder.ID);
-					s_logHelper.WriteLineOut("{0}: no file to delete", folder.ID);
+					s_logHelper.WriteLineOut(Strings.MsgNoLogFileToDelete, folder.ID, traceInfo: true);
 				}
 			}
 
@@ -575,7 +503,7 @@ namespace Smartgeek.LogRotator
 
 				if (logFilesToCompress.Count > 0)
 				{
-					s_logHelper.WriteLineOut("{0}: {1} {2} to compress...", folder.ID, logFilesToCompress.Count, logFilesToCompress.Count > 1 ? "log files" : "log file", traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgXLogFilesToCompress, folder.ID, logFilesToCompress.Count, logFilesToCompress.Count > 1 ? Plurals.LogFiles : Plurals.LogFile, traceInfo: true);
 
 					int compressedCount = 0, deletedCount = 0;
 
@@ -591,36 +519,38 @@ namespace Smartgeek.LogRotator
 						}
 					});
 
-					s_logHelper.WriteLineOut("{0}: {1} compressed, {2} deleted", folder.ID, compressedCount, deletedCount, traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgXLogFilesCompressedXDeleted, folder.ID, compressedCount, deletedCount, traceInfo: true);
 				}
 				else
 				{
-					s_logHelper.WriteLineOut("{0}: no file to compress", folder.ID, traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgNoLogFileToCompress, folder.ID, traceInfo: true);
 				}
 			}
 		}
 
 		private static bool Delete(FileLogInfo fileLog, DeleteReasonType reasonType)
 		{
-			Trace.TraceInformation("{0} deleting (reason: {1})...", fileLog.File.FullName, reasonType);
+			// TODO redirect messages to logHelper according to new log verbosity config
+
+			Trace.TraceInformation(Strings.MsgLogFileDeleting, fileLog.File.FullName, reasonType);
 			try
 			{
 				if (!s_simulationMode)
 				{
 					fileLog.File.Delete();
 					fileLog.File.Refresh();
-					Trace.TraceInformation("{0} deleted", fileLog.File.FullName);
+					Trace.TraceInformation(Strings.MsgLogFileDeleted, fileLog.File.FullName);
 				}
 				else
 				{
 					// TODO check for file deletion permission
-					Trace.TraceInformation("{0} not deleted (simulation mode)", fileLog.File.FullName);
+					Trace.TraceInformation(Strings.MsgLogFileNotDeletedSimulationMode, fileLog.File.FullName);
 				}				
 				return true;
 			}
 			catch (Exception ex)
 			{
-				Trace.TraceError("{0} delete error: {1}", fileLog.File.FullName, ex.Message);
+				Trace.TraceError(Strings.MsgLogFileDeletionError, fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
 				return false;
 			}
@@ -628,21 +558,23 @@ namespace Smartgeek.LogRotator
 
 		private static bool Compress(FileLogInfo fileLog)
 		{
+			// TODO redirect messages to logHelper according to new log verbosity config
+
 			FileInfo compressedFileInfo = new FileInfo(String.Concat(fileLog.File.FullName, ".zip"));
-			Trace.TraceInformation("{0} compressing to {1}...", fileLog.File.FullName, compressedFileInfo.Name);
+			Trace.TraceInformation(Strings.MsgLogFileCompressing, fileLog.File.FullName, compressedFileInfo.Name);
 			try
 			{
 				if (compressedFileInfo.Exists)
 				{
 					if (!s_simulationMode)
 					{
-						Trace.TraceInformation("{0} deleted (overwrite)", fileLog.File.FullName);
+						Trace.TraceInformation(Strings.MsgLogFileOverwriten, fileLog.File.FullName);
 						compressedFileInfo.Delete();
 					}
 					else
 					{
 						// TODO check for file deletion permission
-						Trace.TraceInformation("{0} not deleted (overwrite, simulation mode)", fileLog.File.FullName);
+						Trace.TraceInformation(Strings.MsgLogFileNotOverwritenSimulationMode, fileLog.File.FullName);
 					}
 				}
 
@@ -654,12 +586,12 @@ namespace Smartgeek.LogRotator
 					if (!s_simulationMode)
 					{
 						zip.Save();
-						Trace.TraceInformation("{0} compressed", fileLog.File.FullName);
+						Trace.TraceInformation(Strings.MsgLogFileCompressed, fileLog.File.FullName);
 					}
 					else
 					{
 						// TODO check for file compression permission
-						Trace.TraceInformation("{0} not compressed (simulation mode)", fileLog.File.FullName);
+						Trace.TraceInformation(Strings.MsgLogFileNotCompressedSimulationMode, fileLog.File.FullName);
 					}
 				}
 				
@@ -675,7 +607,7 @@ namespace Smartgeek.LogRotator
 			}
 			catch (Exception ex)
 			{
-				Trace.TraceError("{0} compression error: {1}", fileLog.File.FullName, ex.Message);
+				Trace.TraceError(Strings.MsgLogFileCompressionError, fileLog.File.FullName, ex.Message);
 				Trace.TraceError(ex.ToString());
 				return false;
 			}

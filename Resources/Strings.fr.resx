@@ -118,126 +118,126 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MsgAdsiAccessDenied" xml:space="preserve">
-    <value>Error: Access to ADSI denied. This program must be executed with elevated privileges.</value>
+    <value>Erreur: Accès refusé à ADSI. Ce programme doit être exécuté avec élévation des privilèges.</value>
   </data>
   <data name="MsgCriticalException" xml:space="preserve">
-    <value>Critical Error</value>
+    <value>Erreur critique</value>
   </data>
   <data name="MsgEnd" xml:space="preserve">
-    <value>End</value>
+    <value>Fin</value>
   </data>
   <data name="MsgFolderInfo" xml:space="preserve">
-    <value>{0}: Period = {1}, Format = {2}, Folder = {3}</value>
+    <value>{0}: période = {1}, format = {2}, dossier = {3}</value>
   </data>
   <data name="MsgFolderNotFound" xml:space="preserve">
-    <value>{0}: folder not found</value>
+    <value>{0}: dossier introuvable</value>
   </data>
   <data name="MsgFolderSkippedCustomLogging" xml:space="preserve">
-    <value>{0}: skipping because custom logging is used</value>
+    <value>{0}: ignoré pour cause de journalisation personnalisée</value>
   </data>
   <data name="MsgFolderSkippedLoggingDisabled" xml:space="preserve">
-    <value>{0}: skipping because logging is disabled</value>
+    <value>{0}: ignoré pour cause de journalisation désactivée</value>
   </data>
   <data name="MsgFolderSkippedNoCompressionNoDeletion" xml:space="preserve">
-    <value>{0}: skipping because compression and deletion are disabled</value>
+    <value>{0}: ignoré pour cause de compression et suppression désactivées</value>
   </data>
   <data name="MsgFtpSvcFeatureFound" xml:space="preserve">
-    <value>FTPSVC (7.5) feature not found</value>
+    <value>fonction FTPSVC (7.5) introuvable</value>
   </data>
   <data name="MsgIisFeatureFound" xml:space="preserve">
-    <value>{0} feature found</value>
+    <value>fonction {0} trouvée</value>
   </data>
   <data name="MsgIisFeatureNotFound" xml:space="preserve">
-    <value>{0} feature not found ({1})</value>
+    <value>fonction {0} introuvable ({1})</value>
   </data>
   <data name="MsgLogFileCompressed" xml:space="preserve">
-    <value>{0} compressed</value>
+    <value>{0} compressé</value>
   </data>
   <data name="MsgLogFileCompressing" xml:space="preserve">
-    <value>{0} compressing to {1}...</value>
+    <value>{0} compression vers {1}...</value>
   </data>
   <data name="MsgLogFileCompressionError" xml:space="preserve">
-    <value>{0} compression error: {1}</value>
+    <value>{0} erreur de compression: {1}</value>
   </data>
   <data name="MsgLogFileDeleted" xml:space="preserve">
-    <value>{0} deleted</value>
+    <value>{0} supprimé</value>
   </data>
   <data name="MsgLogFileDeleting" xml:space="preserve">
-    <value>{0} deleting (reason: {1})...</value>
+    <value>{0} suppression (raison: {1})...</value>
   </data>
   <data name="MsgLogFileDeletionError" xml:space="preserve">
-    <value>{0} deletion error: {1}</value>
+    <value>{0} erreur de suppression: {1}</value>
   </data>
   <data name="MsgLogFileNotCompressedSimulationMode" xml:space="preserve">
-    <value>{0} not compressed (simulation mode)</value>
+    <value>{0} non compressé (mode simulation)</value>
   </data>
   <data name="MsgLogFileNotDeletedSimulationMode" xml:space="preserve">
-    <value>{0} not deleted (simulation mode)</value>
+    <value>{0} non supprimé (mode simulation)</value>
   </data>
   <data name="MsgLogFileNotOverwritenSimulationMode" xml:space="preserve">
-    <value>{0} not overwriten (simulation mode)</value>
+    <value>{0} non écrasé (mode simulation)</value>
   </data>
   <data name="MsgLogFileOverwriten" xml:space="preserve">
-    <value>{0} overwriten</value>
+    <value>{0} écrasé</value>
   </data>
   <data name="MsgLogFileSkippedLatest" xml:space="preserve">
-    <value>{0}: skipping {1} because it's the last log file</value>
+    <value>{0}: {1} ignoré pour cause de dernier fichier-journal</value>
   </data>
   <data name="MsgNoFolderToProcess" xml:space="preserve">
-    <value>No folder read from IIS</value>
+    <value>Aucun dossier lu depuis IIS</value>
   </data>
   <data name="MsgNoLogFileToCompress" xml:space="preserve">
-    <value>{0}: no file to compress</value>
+    <value>{0}: aucun fichier à compresser</value>
   </data>
   <data name="MsgNoLogFileToDelete" xml:space="preserve">
-    <value>{0}: no file to delete</value>
+    <value>{0}: aucun fichier à supprimer</value>
   </data>
   <data name="MsgProcessing" xml:space="preserve">
-    <value>Processing:</value>
+    <value>Traitement:</value>
   </data>
   <data name="MsgReadingAdsiConfig" xml:space="preserve">
-    <value>Reading {0} legacy ADSI configuration...</value>
+    <value>Lecture de la configuration ADSI héritée {0}...</value>
   </data>
   <data name="MsgReadingServerManagerConfig" xml:space="preserve">
-    <value>Reading {0} IIS Server Manager configuration...</value>
+    <value>Lecture de la configuration du gestionnaire de serveur {0}...</value>
   </data>
   <data name="MsgRequireNewerWindows" xml:space="preserve">
-    <value>Prerequisite failed: This Windows Version must be NT 5.1 or newer (OSVersion = {0})</value>
+    <value>Echec de prérequis: Cette version de Windows doit être NT 5.1 ou plus récent (OSVersion = {0})</value>
   </data>
   <data name="MsgRequireWindowsNT" xml:space="preserve">
-    <value>Prerequisite failed: This program requires a Windows NT platform (PlatformID = {0})</value>
+    <value>Echec de prérequis: Ce programme nécessite une plateforme Windows NT (PlatformID = {0})</value>
   </data>
   <data name="MsgServerManagerAccessDenied" xml:space="preserve">
-    <value>Error: Access to IIS Server Manager denied. This program must be executed with elevated privileges.</value>
+    <value>Erreur: Accès refusé au gestionnaire de serveur IIS. Ce programme doit être exécuté avec élévation des privilèges.</value>
   </data>
   <data name="MsgSimulationMode" xml:space="preserve">
-    <value>Simulation Mode</value>
+    <value>Mode simulation</value>
   </data>
   <data name="MsgSummaryIisVersion" xml:space="preserve">
-    <value>IIS Version: {0}</value>
+    <value>Version de IIS: {0}</value>
   </data>
   <data name="MsgSummaryWindowsVersion" xml:space="preserve">
-    <value>Windows Version: {0}</value>
+    <value>Version de Windows: {0}</value>
   </data>
   <data name="MsgUnknownIisVersionString" xml:space="preserve">
-    <value>unknown IIS version</value>
+    <value>version de IIS inconnue</value>
   </data>
   <data name="MsgUnknownWindowsVersion" xml:space="preserve">
-    <value>Warning: Windows versions newer than NT 6.2 were never been tested. Please report any problem.</value>
+    <value>Alerte: Les versions de Windows postérieures à NT 6.2 n'ont pas été testées. Merci de rapporter tout problème.</value>
   </data>
   <data name="MsgXFoldersToProcess" xml:space="preserve">
-    <value>{0} {1} to process:</value>
+    <value>{0} {1} à traiter:</value>
   </data>
   <data name="MsgXLogFilesCompressedXDeleted" xml:space="preserve">
-    <value>{0}: {1} compressed, {2} deleted</value>
+    <value>{0}: {1} compressé(s), {2} supprimé(s)</value>
   </data>
   <data name="MsgXLogFilesDeleted" xml:space="preserve">
-    <value>{0}: {1} {2} deleted</value>
+    <value>{0}: {1} {2} supprimés(s)</value>
   </data>
   <data name="MsgXLogFilesToCompress" xml:space="preserve">
-    <value>{0}: {1} {2} to compress...</value>
+    <value>{0}: {1} {2} à compresser...</value>
   </data>
   <data name="MsgXLogFilesToDelete" xml:space="preserve">
-    <value>{0}: {1} {2} to delete...</value>
+    <value>{0}: {1} {2} à supprimer...</value>
   </data>
 </root>

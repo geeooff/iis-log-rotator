@@ -88,6 +88,51 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0}: Period = {1}, Format = {2}, Folder = {3}.
+        /// </summary>
+        internal static string MsgFolderInfo {
+            get {
+                return ResourceManager.GetString("MsgFolderInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: folder not found.
+        /// </summary>
+        internal static string MsgFolderNotFound {
+            get {
+                return ResourceManager.GetString("MsgFolderNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping because custom logging is used.
+        /// </summary>
+        internal static string MsgFolderSkippedCustomLogging {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedCustomLogging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping because logging is disabled.
+        /// </summary>
+        internal static string MsgFolderSkippedLoggingDisabled {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedLoggingDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping because compression and deletion are disabled.
+        /// </summary>
+        internal static string MsgFolderSkippedNoCompressionNoDeletion {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedNoCompressionNoDeletion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to FTPSVC (7.5) feature not found.
         /// </summary>
         internal static string MsgFtpSvcFeatureFound {
@@ -115,11 +160,128 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} compressed.
+        /// </summary>
+        internal static string MsgLogFileCompressed {
+            get {
+                return ResourceManager.GetString("MsgLogFileCompressed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} compressing to {1}....
+        /// </summary>
+        internal static string MsgLogFileCompressing {
+            get {
+                return ResourceManager.GetString("MsgLogFileCompressing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} compression error: {1}.
+        /// </summary>
+        internal static string MsgLogFileCompressionError {
+            get {
+                return ResourceManager.GetString("MsgLogFileCompressionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} deleted.
+        /// </summary>
+        internal static string MsgLogFileDeleted {
+            get {
+                return ResourceManager.GetString("MsgLogFileDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} deleting (reason: {1})....
+        /// </summary>
+        internal static string MsgLogFileDeleting {
+            get {
+                return ResourceManager.GetString("MsgLogFileDeleting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} deletion error: {1}.
+        /// </summary>
+        internal static string MsgLogFileDeletionError {
+            get {
+                return ResourceManager.GetString("MsgLogFileDeletionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} not compressed (simulation mode).
+        /// </summary>
+        internal static string MsgLogFileNotCompressedSimulationMode {
+            get {
+                return ResourceManager.GetString("MsgLogFileNotCompressedSimulationMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} not deleted (simulation mode).
+        /// </summary>
+        internal static string MsgLogFileNotDeletedSimulationMode {
+            get {
+                return ResourceManager.GetString("MsgLogFileNotDeletedSimulationMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} not overwriten (simulation mode).
+        /// </summary>
+        internal static string MsgLogFileNotOverwritenSimulationMode {
+            get {
+                return ResourceManager.GetString("MsgLogFileNotOverwritenSimulationMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} overwriten.
+        /// </summary>
+        internal static string MsgLogFileOverwriten {
+            get {
+                return ResourceManager.GetString("MsgLogFileOverwriten", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping {1} because it&apos;s the last log file.
+        /// </summary>
+        internal static string MsgLogFileSkippedLatest {
+            get {
+                return ResourceManager.GetString("MsgLogFileSkippedLatest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No folder read from IIS.
         /// </summary>
         internal static string MsgNoFolderToProcess {
             get {
                 return ResourceManager.GetString("MsgNoFolderToProcess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: no file to compress.
+        /// </summary>
+        internal static string MsgNoLogFileToCompress {
+            get {
+                return ResourceManager.GetString("MsgNoLogFileToCompress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: no file to delete.
+        /// </summary>
+        internal static string MsgNoLogFileToDelete {
+            get {
+                return ResourceManager.GetString("MsgNoLogFileToDelete", resourceCulture);
             }
         }
         
@@ -160,7 +322,7 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Prerequisite failed: Must be a Windows NT platform (PlatformID = {0}).
+        ///   Looks up a localized string similar to Prerequisite failed: This program requires a Windows NT platform (PlatformID = {0}).
         /// </summary>
         internal static string MsgRequireWindowsNT {
             get {
@@ -228,6 +390,42 @@ namespace Smartgeek.LogRotator.Resources {
         internal static string MsgXFoldersToProcess {
             get {
                 return ResourceManager.GetString("MsgXFoldersToProcess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: {1} compressed, {2} deleted.
+        /// </summary>
+        internal static string MsgXLogFilesCompressedXDeleted {
+            get {
+                return ResourceManager.GetString("MsgXLogFilesCompressedXDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: {1} {2} deleted.
+        /// </summary>
+        internal static string MsgXLogFilesDeleted {
+            get {
+                return ResourceManager.GetString("MsgXLogFilesDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: {1} {2} to compress....
+        /// </summary>
+        internal static string MsgXLogFilesToCompress {
+            get {
+                return ResourceManager.GetString("MsgXLogFilesToCompress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: {1} {2} to delete....
+        /// </summary>
+        internal static string MsgXLogFilesToDelete {
+            get {
+                return ResourceManager.GetString("MsgXLogFilesToDelete", resourceCulture);
             }
         }
     }
