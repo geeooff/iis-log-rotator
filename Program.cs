@@ -6,6 +6,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Permissions;
 using System.Threading;
 using Microsoft.Web.Administration;
 using Smartgeek.LogRotator.Configuration;
@@ -34,6 +36,20 @@ namespace Smartgeek.LogRotator
 					}
 				}
 
+				// check for WinNT platform
+				if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+				{
+					s_logHelper.WriteLineError(Strings.MsgRequireWindowsNT, Environment.OSVersion.Platform, traceError: true);
+					Environment.Exit(-1);
+				}
+
+				// check for NT 5.1 minimum
+				if (Environment.OSVersion.LessThan(5, 1))
+				{
+					s_logHelper.WriteLineError(Strings.MsgRequireNewerWindows, Environment.OSVersion, traceError: true);
+					Environment.Exit(-1);
+				}
+
 				Process currentProcess = Process.GetCurrentProcess();
 
 				// change the current process priority to be below normal
@@ -43,68 +59,60 @@ namespace Smartgeek.LogRotator
 					currentProcess.PriorityClass = ProcessPriorityClass.BelowNormal;
 				}
 
-				if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-				{
-					s_logHelper.WriteLineError(Strings.MsgRequireWindowsNT, Environment.OSVersion.Platform, traceError: true);
-					Environment.ExitCode = -1;
-					return;
-				}
-
 				List<Folder> folders = new List<Folder>();
 
+				String iisLegacyVersionInfo = Environment.OSVersion.GetIisLegacyVersionString();
 				String iisVersionInfo = Environment.OSVersion.GetIisVersionString();
 				Trace.TraceInformation(Strings.MsgSummaryWindowsVersion, Environment.OSVersion);
 				Trace.TraceInformation(Strings.MsgSummaryIisVersion, iisVersionInfo);
 
-				if (Environment.OSVersion.Version.Major >= 6)
+				// Windows NT 6.0 (Vista, Server 2008) and greater
+				if (Environment.OSVersion.GreaterThanEqual(6, 0))
 				{
-					if (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 2)
+					// alert for Windows version greater than NT 6.2
+					if (Environment.OSVersion.GreaterThan(6, 2))
 					{
 						s_logHelper.WriteLineOut(Strings.MsgUnknownWindowsVersion, traceWarning: true);
 					}
 
-					bool skipLegacyFtpSvc = (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor > 0);
+					// MSFTPSVC don't exists anymore for NT 6.1 and greater
+					bool skipLegacyFtpSvc = Environment.OSVersion.GreaterThanEqual(6, 1);
 
-					s_logHelper.WriteLineOut(Strings.MsgReadingAdsiConfig, iisVersionInfo, traceInfo: true);
-
-					try
-					{
-						AddFoldersFromAdsi(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
-					}
-					catch (Exception ex)
-					{
-						Die(s_logHelper, Strings.MsgAdsiAccessDenied, Strings.MsgCriticalException, ex);
-					}
-
-					s_logHelper.WriteLineOut(Strings.MsgReadingServerManagerConfig, iisVersionInfo, traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisLegacyVersionInfo, traceInfo: true);
 
 					try
 					{
-						AddFoldersFromServerManager(folders);
+						AddFoldersFromIisLegacyManager(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
 					}
 					catch (Exception ex)
 					{
-						Die(s_logHelper, Strings.MsgServerManagerAccessDenied, Strings.MsgCriticalException, ex);
+						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+					}
+
+					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisVersionInfo, traceInfo: true);
+
+					try
+					{
+						AddFoldersFromIisManager(folders);
+					}
+					catch (Exception ex)
+					{
+						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisVersionInfo), Strings.MsgCriticalException, ex);
 					}
 				}
-				else if (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor >= 1)
-				{
-					s_logHelper.WriteLineOut(Strings.MsgReadingAdsiConfig, iisVersionInfo, traceInfo: true);
-
-					try
-					{
-						AddFoldersFromAdsi(folders);
-					}
-					catch (Exception ex)
-					{
-						Die(s_logHelper, Strings.MsgAdsiAccessDenied, Strings.MsgCriticalException, ex);
-					}
-				}
+				// legacy Windows
 				else
 				{
-					String message = String.Format(Strings.MsgRequireNewerWindows, Environment.OSVersion);
-					s_logHelper.WriteLineError(message, traceError: true);
-					Environment.Exit(-1);
+					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisLegacyVersionInfo, traceInfo: true);
+
+					try
+					{
+						AddFoldersFromIisLegacyManager(folders);
+					}
+					catch (Exception ex)
+					{
+						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+					}
 				}
 
 				s_logHelper.WriteLineOut();
@@ -112,12 +120,29 @@ namespace Smartgeek.LogRotator
 				if (folders.Count > 0)
 				{
 					s_logHelper.WriteLineOut(Strings.MsgXFoldersToProcess, folders.Count, folders.Count > 1 ? Plurals.Folders : Plurals.Folder, traceInfo: true);
-					folders.ForEach(WriteFolderInfo);
+
+					// write each folder summary
+					folders.ForEach(folder =>
+					{
+						String message = String.Format(Strings.MsgFolderInfo, folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
+						s_logHelper.WriteLineOut(message, traceInfo: true);
+					});
 
 					s_logHelper.WriteLineOut();
 					s_logHelper.WriteLineOut(Strings.MsgProcessing);
 
-					folders.ForEach(ProcessFolder);
+					// process each folder
+					folders.ForEach(folder =>
+					{
+						try
+						{
+							ProcessFolder(folder);
+						}
+						catch (Exception ex)
+						{
+							s_logHelper.WriteLineError(Strings.MsgFolderSkippedError, ex, traceWarning: true);
+						}
+					});
 				}
 				else
 				{
@@ -129,35 +154,35 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void AddFoldersFromAdsi(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
+		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
 		{
 			using (DirectoryEntry lm = new DirectoryEntry(@"IIS://localhost"))
 			{
 				if (!skipHttp)
 				{
-					AddFoldersFromAdsi(folders, lm, IisServiceType.W3SVC);
+					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.W3SVC);
 				}
 
 				if (!skipFtp)
 				{
-					AddFoldersFromAdsi(folders, lm, IisServiceType.MSFTPSVC);
+					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.MSFTPSVC);
 				}
 
 				if (!skipSmtp)
 				{
-					AddFoldersFromAdsi(folders, lm, IisServiceType.SMTPSVC);
+					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.SMTPSVC);
 				}
 
 				if (!skipNntp)
 				{
-					AddFoldersFromAdsi(folders, lm, IisServiceType.NNTPSVC);
+					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.NNTPSVC);
 				}
 
 				lm.Close();
 			}
 		}
 
-		private static void AddFoldersFromAdsi(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
+		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
 		{
 			String name = svcType.ToString(), schemaClassName;
 
@@ -167,7 +192,7 @@ namespace Smartgeek.LogRotator
 				case IisServiceType.MSFTPSVC: schemaClassName = "IisFtpService"; break;
 				case IisServiceType.SMTPSVC: schemaClassName = "IisSmtpService"; break;
 				case IisServiceType.NNTPSVC: schemaClassName = "IisNntpService"; break;
-				default: throw new InvalidOperationException("That type of IIS Service can't be read from ADSI");
+				default: throw new InvalidOperationException("That type of IIS Service can't be read from IIS 6.0 Manager");
 			}
 
 			DirectoryEntry svc = null;
@@ -196,11 +221,10 @@ namespace Smartgeek.LogRotator
 					bool isCentralW3C = false, isCentralBinary = false, isUTF8 = false;
 
 					// NT 5.2 or newer features for W3SVC
-					if (svcType == IisServiceType.W3SVC && Environment.OSVersion.Version >= new Version(5, 2))
+					if (svcType == IisServiceType.W3SVC && Environment.OSVersion.GreaterThanEqual(5, 2))
 					{
 						// central log file is available starting with NT 5.2 SP1
-						if (Environment.OSVersion.Version > new Version(5, 2)
-							|| Environment.OSVersion.Version == new Version(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack))
+						if (Environment.OSVersion.GreaterThan(5, 2) || (Environment.OSVersion.Equal(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack)))
 						{
 							isCentralW3C = (bool)svc.Properties["CentralW3CLoggingEnabled"].Value;
 							isCentralBinary = (bool)svc.Properties["CentralBinaryLoggingEnabled"].Value;
@@ -258,7 +282,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void AddFoldersFromServerManager(List<Folder> folders)
+		private static void AddFoldersFromIisManager(List<Folder> folders)
 		{
 			using (ServerManager serverManager = new ServerManager())
 			{
@@ -291,10 +315,10 @@ namespace Smartgeek.LogRotator
 				bool isFtpServerUTF8 = false;
 				ConfigurationElement ftpServerCentralLogFile = null;
 
-				// check for FTP 7.5 feature
-				bool isFtpSvc75 = (config.RootSectionGroup.SectionGroups["system.ftpServer"] != null);
+				// check for FTPSVC feature
+				bool isFtpSvc = (config.RootSectionGroup.SectionGroups["system.ftpServer"] != null);
 
-				if (isFtpSvc75)
+				if (isFtpSvc)
 				{
 					Trace.TraceInformation(Strings.MsgFtpSvcFeatureFound);
 
@@ -330,7 +354,7 @@ namespace Smartgeek.LogRotator
 					));
 				}
 
-				if (isFtpSvc75 && isFtpServerCentralW3C)
+				if (isFtpSvc && isFtpServerCentralW3C)
 				{
 					folders.Add(Folder.Create(
 						ftpServerCentralLogFile,
@@ -340,7 +364,7 @@ namespace Smartgeek.LogRotator
 					));
 				}
 
-				if (!isCentralW3C || !isCentralBinary || (isFtpSvc75 && !isFtpServerCentralW3C))
+				if (!isCentralW3C || !isCentralBinary || (isFtpSvc && !isFtpServerCentralW3C))
 				{
 					// per-site log file processing
 					ConfigurationSection sitesSection = config.GetSection("system.applicationHost/sites");
@@ -376,7 +400,7 @@ namespace Smartgeek.LogRotator
 							return StringComparer.InvariantCultureIgnoreCase.Equals(protocol, "ftp");
 						});
 
-						if (isFtpSvc75 && isFtpSite && !isFtpServerCentralW3C)
+						if (isFtpSvc && isFtpSite && !isFtpServerCentralW3C)
 						{
 							ConfigurationElement ftpServer = site.GetChildElement("ftpServer");
 							ConfigurationElement ftpServerLogFile = ftpServer.GetChildElement("logFile");
@@ -392,39 +416,55 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void WriteFolderInfo(Folder folder)
-		{
-			String message = String.Format(Strings.MsgFolderInfo, folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
-			s_logHelper.WriteLineOut(message, traceInfo: true);
-		}
-
 		private static void ProcessFolder(Folder folder)
 		{
+			// site logging disabled
 			if (!folder.Enabled)
 			{
 				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedLoggingDisabled, folder.ID, traceInfo: true);
 				return;
 			}
 
+			// ODBC custom logging
 			if (folder.LogFormat == IisLogFormatType.Custom)
 			{
 				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedCustomLogging, folder.ID, traceInfo: true);
 				return;
 			}
 
-			DirectoryInfo di = new DirectoryInfo(folder.Directory);
-			if (!di.Exists)
-			{
-				s_logHelper.WriteLineOut(Strings.MsgFolderNotFound, folder.ID, traceInfo: true);
-				return;
-			}
-			
 			// specific folder rotation settings or default settings
 			RotationSettingsElement settings = RuntimeConfig.Rotation.GetSiteSettingsOrDefault(folder.ID);
-
 			if (!settings.Compress && !settings.Delete)
 			{
 				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedNoCompressionNoDeletion, folder.ID, traceInfo: true);
+				return;
+			}
+
+			// check for folder existence
+			DirectoryInfo di = new DirectoryInfo(folder.Directory);
+			if (!di.Exists)
+			{
+				s_logHelper.WriteLineOut(Strings.MsgFolderSkippedNotFound, folder.ID, traceWarning: true);
+				return;
+			}
+
+			// check for .NET permissions
+			FileIOPermission readWritePermission = new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, folder.Directory);
+			try
+			{
+				readWritePermission.Demand();
+			}
+			catch (SecurityException ex)
+			{
+				s_logHelper.WriteLineError(Strings.MsgFolderSkippedFileIOPermission, folder.ID, ex.Message, traceWarning: true);
+				return;
+			}
+
+			// check for rights
+			UserFileAccessRights accessRights = new UserFileAccessRights(folder.Directory);
+			if (!accessRights.CanRead || !accessRights.CanWrite)
+			{
+				s_logHelper.WriteLineError(Strings.MsgFolderSkippedACLs, folder.ID, traceWarning: true);
 				return;
 			}
 

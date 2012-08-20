@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MsgAdsiAccessDenied" xml:space="preserve">
-    <value>Erreur: Accès refusé à ADSI. Ce programme doit être exécuté avec élévation des privilèges.</value>
-  </data>
   <data name="MsgCriticalException" xml:space="preserve">
     <value>Erreur critique</value>
   </data>
@@ -142,13 +139,16 @@
     <value>{0}: ignoré pour cause de compression et suppression désactivées</value>
   </data>
   <data name="MsgFtpSvcFeatureFound" xml:space="preserve">
-    <value>fonction FTPSVC (7.5) introuvable</value>
+    <value>fonction FTPSVC introuvable</value>
   </data>
   <data name="MsgIisFeatureFound" xml:space="preserve">
     <value>fonction {0} trouvée</value>
   </data>
   <data name="MsgIisFeatureNotFound" xml:space="preserve">
     <value>fonction {0} introuvable ({1})</value>
+  </data>
+  <data name="MsgIisManagerAccessDenied" xml:space="preserve">
+    <value>Erreur: Accès refusé au gestionnaire {0}. Ce programme doit être exécuté avec élévation des privilèges.</value>
   </data>
   <data name="MsgLogFileCompressed" xml:space="preserve">
     <value>{0} compressé</value>
@@ -195,20 +195,14 @@
   <data name="MsgProcessing" xml:space="preserve">
     <value>Traitement:</value>
   </data>
-  <data name="MsgReadingAdsiConfig" xml:space="preserve">
-    <value>Lecture de la configuration ADSI héritée {0}...</value>
-  </data>
-  <data name="MsgReadingServerManagerConfig" xml:space="preserve">
-    <value>Lecture de la configuration du gestionnaire de serveur {0}...</value>
+  <data name="MsgReadingIisManagerConfig" xml:space="preserve">
+    <value>Lecture de la configuration du gestionnaire {0}...</value>
   </data>
   <data name="MsgRequireNewerWindows" xml:space="preserve">
     <value>Echec de prérequis: Cette version de Windows doit être NT 5.1 ou plus récent (OSVersion = {0})</value>
   </data>
   <data name="MsgRequireWindowsNT" xml:space="preserve">
     <value>Echec de prérequis: Ce programme nécessite une plateforme Windows NT (PlatformID = {0})</value>
-  </data>
-  <data name="MsgServerManagerAccessDenied" xml:space="preserve">
-    <value>Erreur: Accès refusé au gestionnaire de serveur IIS. Ce programme doit être exécuté avec élévation des privilèges.</value>
   </data>
   <data name="MsgSimulationMode" xml:space="preserve">
     <value>Mode simulation</value>

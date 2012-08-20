@@ -157,6 +157,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="UserFileAccessRights.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App.ico" />

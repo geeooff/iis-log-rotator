@@ -76,6 +76,32 @@ namespace Smartgeek.LogRotator
 			return defaultValue;
 		}
 
+		public static String GetIisLegacyVersionString(this OperatingSystem os)
+		{
+			switch (os.Version.Major)
+			{
+				case 5:
+					switch (os.Version.Minor)
+					{
+						case 0: return "IIS 5.0";
+						case 1: return "IIS 5.1";
+						case 2: return "IIS 6.0";
+					}
+					break;
+
+				case 6:
+					switch (os.Version.Minor)
+					{
+						case 0:
+						case 1:
+						case 2:
+							return "IIS 6.0";
+					}
+					break;
+			}
+			return Strings.MsgUnknownIisVersionString;
+		}
+
 		public static String GetIisVersionString(this OperatingSystem os)
 		{
 			switch (os.Version.Major)
@@ -99,6 +125,31 @@ namespace Smartgeek.LogRotator
 					break;
 			}
 			return Strings.MsgUnknownIisVersionString;
+		}
+
+		public static bool LessThan(this OperatingSystem os, int major, int minor)
+		{
+			return (os.Version.Major < major || (os.Version.Major == major && os.Version.Minor < minor));
+		}
+
+		public static bool LessThanEqual(this OperatingSystem os, int major, int minor)
+		{
+			return (os.Version.Major < major || (os.Version.Major == major && os.Version.Minor <= minor));
+		}
+
+		public static bool Equal(this OperatingSystem os, int major, int minor)
+		{
+			return (os.Version.Major == major && os.Version.Minor == minor);
+		}
+
+		public static bool GreaterThan(this OperatingSystem os, int major, int minor)
+		{
+			return (os.Version.Major > major || (os.Version.Major == major && os.Version.Minor > minor));
+		}
+
+		public static bool GreaterThanEqual(this OperatingSystem os, int major, int minor)
+		{
+			return (os.Version.Major > major || (os.Version.Major == major && os.Version.Minor >= minor));
 		}
 	}
 }

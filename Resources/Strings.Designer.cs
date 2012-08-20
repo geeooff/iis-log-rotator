@@ -61,15 +61,6 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Error: Access to ADSI denied. This program must be executed with elevated privileges..
-        /// </summary>
-        internal static string MsgAdsiAccessDenied {
-            get {
-                return ResourceManager.GetString("MsgAdsiAccessDenied", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Critical Error.
         /// </summary>
         internal static string MsgCriticalException {
@@ -97,11 +88,11 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0}: folder not found.
+        ///   Looks up a localized string similar to {0}: skipping because read/write access are denied by ACLs.
         /// </summary>
-        internal static string MsgFolderNotFound {
+        internal static string MsgFolderSkippedACLs {
             get {
-                return ResourceManager.GetString("MsgFolderNotFound", resourceCulture);
+                return ResourceManager.GetString("MsgFolderSkippedACLs", resourceCulture);
             }
         }
         
@@ -111,6 +102,24 @@ namespace Smartgeek.LogRotator.Resources {
         internal static string MsgFolderSkippedCustomLogging {
             get {
                 return ResourceManager.GetString("MsgFolderSkippedCustomLogging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping because an error occured: {1}.
+        /// </summary>
+        internal static string MsgFolderSkippedError {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping because read/write access are denied by .NET permissions ({1}).
+        /// </summary>
+        internal static string MsgFolderSkippedFileIOPermission {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedFileIOPermission", resourceCulture);
             }
         }
         
@@ -133,7 +142,16 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to FTPSVC (7.5) feature not found.
+        ///   Looks up a localized string similar to {0}: skipping because folder not found or access denied.
+        /// </summary>
+        internal static string MsgFolderSkippedNotFound {
+            get {
+                return ResourceManager.GetString("MsgFolderSkippedNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to FTPSVC feature not found.
         /// </summary>
         internal static string MsgFtpSvcFeatureFound {
             get {
@@ -156,6 +174,15 @@ namespace Smartgeek.LogRotator.Resources {
         internal static string MsgIisFeatureNotFound {
             get {
                 return ResourceManager.GetString("MsgIisFeatureNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error: Access to {0} Manager denied. This program must be executed with elevated privileges..
+        /// </summary>
+        internal static string MsgIisManagerAccessDenied {
+            get {
+                return ResourceManager.GetString("MsgIisManagerAccessDenied", resourceCulture);
             }
         }
         
@@ -250,6 +277,15 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0}: skipping {1} because its read/write access are denied ({2}).
+        /// </summary>
+        internal static string MsgLogFileSkippedAccessDenied {
+            get {
+                return ResourceManager.GetString("MsgLogFileSkippedAccessDenied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0}: skipping {1} because it&apos;s the last log file.
         /// </summary>
         internal static string MsgLogFileSkippedLatest {
@@ -295,20 +331,11 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Reading {0} legacy ADSI configuration....
+        ///   Looks up a localized string similar to Reading {0} Manager configuration....
         /// </summary>
-        internal static string MsgReadingAdsiConfig {
+        internal static string MsgReadingIisManagerConfig {
             get {
-                return ResourceManager.GetString("MsgReadingAdsiConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Reading {0} IIS Server Manager configuration....
-        /// </summary>
-        internal static string MsgReadingServerManagerConfig {
-            get {
-                return ResourceManager.GetString("MsgReadingServerManagerConfig", resourceCulture);
+                return ResourceManager.GetString("MsgReadingIisManagerConfig", resourceCulture);
             }
         }
         
@@ -327,15 +354,6 @@ namespace Smartgeek.LogRotator.Resources {
         internal static string MsgRequireWindowsNT {
             get {
                 return ResourceManager.GetString("MsgRequireWindowsNT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Error: Access to IIS Server Manager denied. This program must be executed with elevated privileges..
-        /// </summary>
-        internal static string MsgServerManagerAccessDenied {
-            get {
-                return ResourceManager.GetString("MsgServerManagerAccessDenied", resourceCulture);
             }
         }
         
@@ -367,7 +385,7 @@ namespace Smartgeek.LogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to unknown IIS version.
+        ///   Looks up a localized string similar to Unknown IIS Version.
         /// </summary>
         internal static string MsgUnknownIisVersionString {
             get {
