@@ -45,7 +45,7 @@
     <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -62,14 +62,15 @@
     <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>App.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Remote Debug %28ROVMS502%29|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>D:\TEMP\LogRotator\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;z</DefineConstants>
+    <OutputPath>C:\TEMP\LogRotator\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisLogFile>bin\Debug\LogRotator.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
@@ -92,15 +93,25 @@
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Remote Debug %28ZEUS%29|AnyCPU' ">
+    <OutputPath>C:\TEMP\LogRotator\</OutputPath>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Ionic.Zip">
       <HintPath>packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.Administration, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>C:\Windows\System32\inetsrv\Microsoft.Web.Administration.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
-    <Reference Include="Microsoft.Win32.TaskScheduler">
-      <HintPath>packages\TaskScheduler.1.8.1\lib\2\Microsoft.Win32.TaskScheduler.dll</HintPath>
+    <Reference Include="Microsoft.Win32.TaskScheduler, Version=1.8.3.15820, Culture=neutral, PublicKeyToken=0d013ddd5178a2ae, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\TaskScheduler.1.8.3\lib\2\Microsoft.Win32.TaskScheduler.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -116,7 +127,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\ConfigurationElementCollection.cs" />
-    <Compile Include="Configuration\InstallerConfigLegacy.cs" />
     <Compile Include="Configuration\InstallerConfig.cs" />
     <Compile Include="Configuration\SiteRotationSettingsElementCollection.cs" />
     <Compile Include="Configuration\RotationSettingsElement.cs" />
@@ -166,14 +176,6 @@
     <None Include="install.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="packages\TaskScheduler.1.8.1\lib\2\it\Microsoft.Win32.TaskScheduler.resources.dll" />
-    <None Include="packages\TaskScheduler.1.8.1\lib\2\Microsoft.Win32.TaskScheduler.dll" />
-    <None Include="packages\TaskScheduler.1.8.1\lib\2\Microsoft.Win32.TaskScheduler.XML" />
-    <None Include="packages\TaskScheduler.1.8.1\lib\2\zh-CN\Microsoft.Win32.TaskScheduler.resources.dll" />
-    <None Include="packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll" />
-    <None Include="packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.xml" />
-    <None Include="packages\DotNetZip.1.9.1.8\lib\sl\Ionic.Zip.dll" />
-    <None Include="packages\TaskScheduler.1.8.1\TaskScheduler.1.8.1.nupkg" />
     <None Include="uninstall.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -181,8 +183,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="packages\DotNetZip.1.9.1.8\DotNetZip.1.9.1.8.nupkg" />
-    <None Include="packages\repositories.config" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
@@ -229,7 +229,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>REM xcopy /I /Y $(OutDir)* \\rovms502\c$\Scripts\LogRotator</PostBuildEvent>
+    <PostBuildEvent>xcopy /I /Y $(OutDir)* \\ZEUS\c$\TEMP\LogRotator
+REM xcopy /I /Y $(OutDir)* \\rovms502\c$\TEMP\LogRotator</PostBuildEvent>
   </PropertyGroup>
   <Target Name="AfterBuild" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <CreateItem Include="@(ReferencePath)" Condition="'%(CopyLocal)'=='true'">

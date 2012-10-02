@@ -1,21 +1,36 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogRotator", "LogRotator.csproj", "{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
-		Remote Debug (ROVMS502)|Any CPU = Remote Debug (ROVMS502)|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|x86 = Release|x86
+		Remote Debug (ZEUS)|Any CPU = Remote Debug (ZEUS)|Any CPU
+		Remote Debug (ZEUS)|Mixed Platforms = Remote Debug (ZEUS)|Mixed Platforms
+		Remote Debug (ZEUS)|x86 = Remote Debug (ZEUS)|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ROVMS502)|Any CPU.ActiveCfg = Remote Debug (ROVMS502)|Any CPU
-		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ROVMS502)|Any CPU.Build.0 = Remote Debug (ROVMS502)|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Release|x86.ActiveCfg = Release|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ZEUS)|Any CPU.ActiveCfg = Remote Debug (ROVMS502)|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ZEUS)|Any CPU.Build.0 = Remote Debug (ROVMS502)|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ZEUS)|Mixed Platforms.ActiveCfg = Remote Debug (ZEUS)|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ZEUS)|Mixed Platforms.Build.0 = Remote Debug (ZEUS)|Any CPU
+		{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}.Remote Debug (ZEUS)|x86.ActiveCfg = Remote Debug (ZEUS)|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

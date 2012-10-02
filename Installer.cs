@@ -27,13 +27,13 @@ namespace Smartgeek.LogRotator
 		{
 			base.Install(stateSaver);
 
-			previousEnableEventLog = InstallerConfigLegacy.EnableEventLog;
+			previousEnableEventLog = InstallerConfig.EnableEventLog;
 
 			// enable windows event logs
-			if (!InstallerConfigLegacy.EnableEventLog)
+			if (!InstallerConfig.EnableEventLog)
 			{
-				InstallerConfigLegacy.EnableEventLog = true;
-				InstallerConfigLegacy.Save();
+				InstallerConfig.EnableEventLog = true;
+				InstallerConfig.Save();
 
 				Trace.TraceInformation("Windows event logs for this application are now enabled.");
 				this.Context.LogMessage("Information: Windows event logs for this application are now enabled.");
@@ -53,10 +53,10 @@ namespace Smartgeek.LogRotator
 			base.Rollback(savedState);
 
 			// restore previous event log settings
-			if (InstallerConfigLegacy.EnableEventLog != previousEnableEventLog)
+			if (InstallerConfig.EnableEventLog != previousEnableEventLog)
 			{
-				InstallerConfigLegacy.EnableEventLog = previousEnableEventLog;
-				InstallerConfigLegacy.Save();
+				InstallerConfig.EnableEventLog = previousEnableEventLog;
+				InstallerConfig.Save();
 
 				Trace.TraceInformation("Windows event logs settings for this application has been rollbacked");
 				this.Context.LogMessage("Information: Windows event logs settings for this application has been rollbacked");
@@ -83,10 +83,10 @@ namespace Smartgeek.LogRotator
 			}
 
 			// disable windows event logs
-			if (InstallerConfigLegacy.EnableEventLog)
+			if (InstallerConfig.EnableEventLog)
 			{
-				InstallerConfigLegacy.EnableEventLog = false;
-				InstallerConfigLegacy.Save();
+				InstallerConfig.EnableEventLog = false;
+				InstallerConfig.Save();
 
 				Trace.TraceInformation("Windows event logs for this application are now disabled");
 				this.Context.LogMessage("Information: Windows event logs for this application are now disabled");
