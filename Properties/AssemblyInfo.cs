@@ -3,11 +3,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Resources;
 
-[assembly: AssemblyTitle("LogRotator")]
-[assembly: AssemblyDescription("IIS Log Rotation Robot")]
-[assembly: AssemblyCompany("smartgeek.net")]
-[assembly: AssemblyProduct("LogRotator")]
-[assembly: AssemblyCopyright("Copyright © smartgeek.net 2012")]
+[assembly: AssemblyProduct("IisLogRotator")]
+[assembly: AssemblyTitle("IIS Log Rotator")]
+[assembly: AssemblyDescription("IIS Log Rotation Program")]
+[assembly: AssemblyCompany("Geoffrey Vancoetsem")]
+[assembly: AssemblyCopyright("Copyright 2017 © Geoffrey Vancoetsem")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
@@ -24,6 +24,6 @@ using System.Resources;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 
-[assembly: AssemblyVersion("1.7.0.0")]
-[assembly: AssemblyFileVersion("1.7.0.0")]
-[assembly: AssemblyInformationalVersion("1.7 alpha")]
+[assembly: AssemblyVersion("1.8.0.0")]
+[assembly: AssemblyFileVersion("1.8.0.0")]
+[assembly: AssemblyInformationalVersion("1.8")]

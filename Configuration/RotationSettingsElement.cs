@@ -2,7 +2,7 @@ using System;
 using System.Configuration;
 using System.ComponentModel;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
 	public class RotationSettingsElement : ConfigurationElement
 	{

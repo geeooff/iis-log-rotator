@@ -6,7 +6,7 @@ using System.Configuration;
 using System.Xml;
 using System.IO;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
 	public static class InstallerConfig
 	{
@@ -14,7 +14,7 @@ namespace Smartgeek.LogRotator.Configuration
 
 		private static bool s_initialized;
 		private static Exception s_initializeException;
-		private static String s_xmlFilePath;
+		private static string s_xmlFilePath;
 		private static XmlDocument s_xmlDoc;
 		private static XmlNode s_rotationNode;
 

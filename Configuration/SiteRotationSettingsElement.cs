@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Configuration;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
 	public class SiteRotationSettingsElement : RotationSettingsElement
 	{
@@ -15,7 +15,7 @@ namespace Smartgeek.LogRotator.Configuration
 		{
 			s_propID = new ConfigurationProperty(
 				"id",
-				typeof(String),
+				typeof(string),
 				null,
 				ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey
 			);
@@ -35,9 +35,9 @@ namespace Smartgeek.LogRotator.Configuration
 			get { return s_properties; }
 		}
 
-		public String ID
+		public string ID
 		{
-			get { return ((String)(this[s_propID])); }
+			get { return ((string)(this[s_propID])); }
 			set { this[s_propID] = value; }
 		}
 	}

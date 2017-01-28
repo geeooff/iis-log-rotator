@@ -157,7 +157,7 @@
     <value>{0} feature not found ({1})</value>
   </data>
   <data name="MsgIisManagerAccessDenied" xml:space="preserve">
-    <value>Error: Access to {0} Manager denied. This program must be executed with elevated privileges.</value>
+    <value>Error: Access to {0} Manager denied. IIS may be not installed. This program also must be executed with administrator privileges.</value>
   </data>
   <data name="MsgLogFileCompressed" xml:space="preserve">
     <value>{0} compressed</value>

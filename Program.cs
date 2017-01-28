@@ -10,10 +10,10 @@ using System.Security;
 using System.Security.Permissions;
 using System.Threading;
 using Microsoft.Web.Administration;
-using Smartgeek.LogRotator.Configuration;
-using Smartgeek.LogRotator.Resources;
+using IisLogRotator.Configuration;
+using IisLogRotator.Resources;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	class Program
 	{
@@ -61,16 +61,16 @@ namespace Smartgeek.LogRotator
 
 				List<Folder> folders = new List<Folder>();
 
-				String iisLegacyVersionInfo = Environment.OSVersion.GetIisLegacyVersionString();
-				String iisVersionInfo = Environment.OSVersion.GetIisVersionString();
+				string iisLegacyVersionInfo = Environment.OSVersion.GetIisLegacyVersionString();
+				string iisVersionInfo = Environment.OSVersion.GetIisVersionString();
 				Trace.TraceInformation(Strings.MsgSummaryWindowsVersion, Environment.OSVersion);
 				Trace.TraceInformation(Strings.MsgSummaryIisVersion, iisVersionInfo);
 
 				// Windows NT 6.0 (Vista, Server 2008) and greater
 				if (Environment.OSVersion.GreaterThanEqual(6, 0))
 				{
-					// alert for Windows version greater than NT 6.2
-					if (Environment.OSVersion.GreaterThan(6, 2))
+					// alert for Windows version greater than Windows 10 / Windows Server 2016 (NT 10.0)
+					if (Environment.OSVersion.GreaterThan(10, 0))
 					{
 						s_logHelper.WriteLineOut(Strings.MsgUnknownWindowsVersion, traceWarning: true);
 					}
@@ -86,7 +86,7 @@ namespace Smartgeek.LogRotator
 					}
 					catch (Exception ex)
 					{
-						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
 					}
 
 					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisVersionInfo, traceInfo: true);
@@ -97,7 +97,7 @@ namespace Smartgeek.LogRotator
 					}
 					catch (Exception ex)
 					{
-						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisVersionInfo), Strings.MsgCriticalException, ex);
+						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisVersionInfo), Strings.MsgCriticalException, ex);
 					}
 				}
 				// legacy Windows
@@ -111,7 +111,7 @@ namespace Smartgeek.LogRotator
 					}
 					catch (Exception ex)
 					{
-						Die(s_logHelper, String.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
 					}
 				}
 
@@ -124,7 +124,7 @@ namespace Smartgeek.LogRotator
 					// write each folder summary
 					folders.ForEach(folder =>
 					{
-						String message = String.Format(Strings.MsgFolderInfo, folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
+						string message = string.Format(Strings.MsgFolderInfo, folder.ID, folder.Period, folder.FilenameFormat, folder.Directory);
 						s_logHelper.WriteLineOut(message, traceInfo: true);
 					});
 
@@ -184,15 +184,32 @@ namespace Smartgeek.LogRotator
 
 		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
 		{
-			String name = svcType.ToString(), schemaClassName;
+			string name = svcType.ToString(), schemaClassName, childrenSchemaClassName;
 
 			switch (svcType)
 			{
-				case IisServiceType.W3SVC: schemaClassName = "IisWebService"; break;
-				case IisServiceType.MSFTPSVC: schemaClassName = "IisFtpService"; break;
-				case IisServiceType.SMTPSVC: schemaClassName = "IisSmtpService"; break;
-				case IisServiceType.NNTPSVC: schemaClassName = "IisNntpService"; break;
-				default: throw new InvalidOperationException("That type of IIS Service can't be read from IIS 6.0 Manager");
+				case IisServiceType.W3SVC:
+					schemaClassName = "IIsWebService";
+					childrenSchemaClassName = "IIsWebServer";
+					break;
+
+				case IisServiceType.MSFTPSVC:
+					schemaClassName = "IIsFtpService";
+					childrenSchemaClassName = "IIsFtpServer";
+					break;
+
+				case IisServiceType.SMTPSVC:
+					schemaClassName = "IIsSmtpService";
+					childrenSchemaClassName = "IIsSmtpServer";
+					break;
+
+				case IisServiceType.NNTPSVC:
+					schemaClassName = "IIsNntpService";
+					childrenSchemaClassName = "IIsNntpServer";
+					break;
+
+				default:
+					throw new InvalidOperationException("That type of IIS Service can't be read from IIS 6.0 Manager");
 			}
 
 			DirectoryEntry svc = null;
@@ -224,7 +241,7 @@ namespace Smartgeek.LogRotator
 					if (svcType == IisServiceType.W3SVC && Environment.OSVersion.GreaterThanEqual(5, 2))
 					{
 						// central log file is available starting with NT 5.2 SP1
-						if (Environment.OSVersion.GreaterThan(5, 2) || (Environment.OSVersion.Equal(5, 2) && !String.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack)))
+						if (Environment.OSVersion.GreaterThan(5, 2) || (Environment.OSVersion.Equal(5, 2) && !string.IsNullOrWhiteSpace(Environment.OSVersion.ServicePack)))
 						{
 							isCentralW3C = (bool)svc.Properties["CentralW3CLoggingEnabled"].Value;
 							isCentralBinary = (bool)svc.Properties["CentralBinaryLoggingEnabled"].Value;
@@ -252,9 +269,11 @@ namespace Smartgeek.LogRotator
 							isUTF8 = (bool)svc.Properties["FtpLogInUtf8"].Value;
 						}
 
-						foreach (DirectoryEntry site in svc.Children.Cast<DirectoryEntry>().Where(e => e.SchemaClassName == schemaClassName))
+						foreach (DirectoryEntry site in svc.Children
+							.Cast<DirectoryEntry>()
+							.Where(e => StringComparer.InvariantCultureIgnoreCase.Equals(e.SchemaClassName, childrenSchemaClassName)))
 						{
-							long siteId = Int64.Parse(site.Name);
+							long siteId = long.Parse(site.Name);
 
 							// site-level FTP log files encoding
 							if (svcType == IisServiceType.MSFTPSVC)
@@ -378,7 +397,7 @@ namespace Smartgeek.LogRotator
 						// any http/https binding ?
 						bool isWebSite = bindingsCollection.Any(binding =>
 						{
-							String protocol = (String)binding.GetAttributeValue("protocol");
+							string protocol = (string)binding.GetAttributeValue("protocol");
 							return StringComparer.InvariantCultureIgnoreCase.Equals(protocol, "http") || StringComparer.InvariantCultureIgnoreCase.Equals(protocol, "https");
 						});
 
@@ -396,7 +415,7 @@ namespace Smartgeek.LogRotator
 						// any ftp binding ?
 						bool isFtpSite = bindingsCollection.Any(binding =>
 						{
-							String protocol = (String)binding.GetAttributeValue("protocol");
+							string protocol = (string)binding.GetAttributeValue("protocol");
 							return StringComparer.InvariantCultureIgnoreCase.Equals(protocol, "ftp");
 						});
 
@@ -600,7 +619,7 @@ namespace Smartgeek.LogRotator
 		{
 			// TODO redirect messages to logHelper according to new log verbosity config
 
-			FileInfo compressedFileInfo = new FileInfo(String.Concat(fileLog.File.FullName, ".zip"));
+			FileInfo compressedFileInfo = new FileInfo(string.Concat(fileLog.File.FullName, ".zip"));
 			Trace.TraceInformation(Strings.MsgLogFileCompressing, fileLog.File.FullName, compressedFileInfo.Name);
 			try
 			{
@@ -621,7 +640,7 @@ namespace Smartgeek.LogRotator
 				using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(compressedFileInfo.FullName))
 				{
 					zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
-					zip.AddFile(fileLog.File.FullName, String.Empty);
+					zip.AddFile(fileLog.File.FullName, string.Empty);
 
 					if (!s_simulationMode)
 					{
@@ -653,7 +672,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		private static void Die(LogHelper logHelper, String messageIfAccessDenied, String messageIfUnhandledException, Exception ex)
+		private static void HandleError(LogHelper logHelper, string messageIfAccessDenied, string messageIfUnhandledException, Exception ex)
 		{
 			if (ex is UnauthorizedAccessException || (ex is COMException && ((COMException)ex).ErrorCode == -2147024891)) // 0x80070005
 			{

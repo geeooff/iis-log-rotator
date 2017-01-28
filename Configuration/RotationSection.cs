@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Configuration;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
 	public class RotationSection : ConfigurationSection
 	{
@@ -83,7 +83,7 @@ namespace Smartgeek.LogRotator.Configuration
 			set { this[s_propSitesSettings] = value; }
 		}
 
-		public RotationSettingsElement GetSiteSettingsOrDefault(String id)
+		public RotationSettingsElement GetSiteSettingsOrDefault(string id)
 		{
 			SiteRotationSettingsElement siteSettings = this.SitesSettings
 				.Cast<SiteRotationSettingsElement>()

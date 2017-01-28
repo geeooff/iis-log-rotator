@@ -3,7 +3,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	///
 	/// This code was written by Bruce Hatt
@@ -115,7 +115,7 @@ namespace Smartgeek.LogRotator
 		///
 
 		/// 
-		public String GetPath
+		public string GetPath
 		{
 			get { return _path; }
 		}
@@ -141,7 +141,7 @@ namespace Smartgeek.LogRotator
 		/// 
 		public UserFileAccessRights(string path, WindowsIdentity principal)
 		{
-			if ((principal != null) || !String.IsNullOrEmpty(path))
+			if ((principal != null) || !string.IsNullOrEmpty(path))
 			{
 				this._path = path;
 				this._principal = principal;
@@ -309,7 +309,7 @@ namespace Smartgeek.LogRotator
 		/// 
 		///
 		/// 
-		public override String ToString()
+		public override string ToString()
 		{
 			StringBuilder sb = new StringBuilder();
 

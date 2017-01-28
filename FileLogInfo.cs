@@ -6,7 +6,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	public class FileLogInfo : IEquatable<FileLogInfo>
 	{
@@ -187,7 +187,7 @@ namespace Smartgeek.LogRotator
 			_isChild = true;
 		}
 
-		public override String ToString()
+		public override string ToString()
 		{
 			return this.File.FullName;
 		}

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Configuration;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
 	public static class RuntimeConfig
 	{

@@ -148,7 +148,7 @@
     <value>fonction {0} introuvable ({1})</value>
   </data>
   <data name="MsgIisManagerAccessDenied" xml:space="preserve">
-    <value>Erreur: Accès refusé au gestionnaire {0}. Ce programme doit être exécuté avec élévation des privilèges.</value>
+    <value>Erreur: Accès refusé au gestionnaire {0}. IIS n'est peut être pas installé. Ce programme doit également être exécuté avec des droits administrateur.</value>
   </data>
   <data name="MsgLogFileCompressed" xml:space="preserve">
     <value>{0} compressé</value>

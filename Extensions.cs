@@ -8,13 +8,13 @@ using System.IO;
 using System.DirectoryServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using Smartgeek.LogRotator.Resources;
+using IisLogRotator.Resources;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	internal static class Extensions
 	{
-		public static String GetAttributeValue2(this ConfigurationElement element, String name)
+		public static string GetAttributeValue2(this ConfigurationElement element, string name)
 		{
 			ConfigurationAttribute attr = element.Attributes.FirstOrDefault(a => a.Name == name);
 
@@ -24,7 +24,7 @@ namespace Smartgeek.LogRotator
 			if (attr.Value == null)
 				return "<null>";
 
-			if (attr.Value.Equals(String.Empty))
+			if (attr.Value.Equals(string.Empty))
 				return "<empty>";
 
 			return "\"" + attr.Value.ToString() + "\"";
@@ -53,7 +53,7 @@ namespace Smartgeek.LogRotator
 			);
 		}
 
-		public static String StripeUtf8Prefix(this String str)
+		public static string StripeUtf8Prefix(this string str)
 		{
 			if (str.StartsWith("u_", StringComparison.Ordinal))
 			{
@@ -62,12 +62,12 @@ namespace Smartgeek.LogRotator
 			return str;
 		}
 
-		public static T GetPropertyValue<T>(this DirectoryEntry entry, String propertyName)
+		public static T GetPropertyValue<T>(this DirectoryEntry entry, string propertyName)
 		{
 			return (T)entry.Properties[propertyName].Value;
 		}
 
-		public static T GetPropertyValue<T>(this DirectoryEntry entry, String propertyName, T defaultValue)
+		public static T GetPropertyValue<T>(this DirectoryEntry entry, string propertyName, T defaultValue)
 		{
 			if (entry.Properties.Contains(propertyName))
 			{
@@ -76,7 +76,7 @@ namespace Smartgeek.LogRotator
 			return defaultValue;
 		}
 
-		public static String GetIisLegacyVersionString(this OperatingSystem os)
+		public static string GetIisLegacyVersionString(this OperatingSystem os)
 		{
 			switch (os.Version.Major)
 			{
@@ -102,7 +102,7 @@ namespace Smartgeek.LogRotator
 			return Strings.MsgUnknownIisVersionString;
 		}
 
-		public static String GetIisVersionString(this OperatingSystem os)
+		public static string GetIisVersionString(this OperatingSystem os)
 		{
 			switch (os.Version.Major)
 			{
@@ -121,6 +121,14 @@ namespace Smartgeek.LogRotator
 						case 0: return "IIS 7.0";
 						case 1: return "IIS 7.5";
 						case 2: return "IIS 8.0";
+						case 3: return "IIS 8.5";
+					}
+					break;
+
+				case 10:
+					switch (os.Version.Minor)
+					{
+						case 0: return "IIS 10.0";
 					}
 					break;
 			}

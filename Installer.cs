@@ -8,17 +8,17 @@ using System.Diagnostics;
 using System.IO;
 
 using TS = Microsoft.Win32.TaskScheduler;
-using Smartgeek.LogRotator.Configuration;
+using IisLogRotator.Configuration;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	[RunInstaller(true)]
 	public class Installer : System.Configuration.Install.Installer
 	{
-		public const String DefaultTaskName = "IIS Logs Rotation";
-		public const String DefaultTaskDescription = "Rotate IIS logs based on each website logging configuration";
-		public const String DefaultEventLog = "IIS Log Rotation";
-		public const String DefaultEventSource = "LogRotator";
+		public const string DefaultTaskName = "IIS Logs Rotation";
+		public const string DefaultTaskDescription = "Rotate IIS logs based on each website logging configuration";
+		public const string DefaultEventLog = "IIS Log Rotation";
+		public const string DefaultEventSource = "LogRotator";
 
 		private EventLogInstaller eventLogInstaller;
 		private bool previousEnableEventLog;
@@ -103,10 +103,10 @@ namespace Smartgeek.LogRotator
 			FileInfo exeFileInfo = new FileInfo(this.GetType().Assembly.Location);
 
 			// get the install directory when used inside a setup project, or current assembly directory
-			String targetDir = this.Context.Parameters["TARGETDIR"] ?? exeFileInfo.DirectoryName;
+			string targetDir = this.Context.Parameters["TARGETDIR"] ?? exeFileInfo.DirectoryName;
 			FileInfo targetExeFileInfo = new FileInfo(Path.Combine(targetDir, exeFileInfo.Name));
 
-			String taskName;
+			string taskName;
 			bool isNewGen;
 
 			// init. task scheduler service engine
@@ -171,7 +171,7 @@ namespace Smartgeek.LogRotator
 
 		private void UninstallTask(IDictionary savedState)
 		{
-			String taskName = (savedState != null) ? (String)savedState["ScheduledTaskName"] ?? DefaultTaskName : DefaultTaskName;
+			string taskName = (savedState != null) ? (string)savedState["ScheduledTaskName"] ?? DefaultTaskName : DefaultTaskName;
 
 			using (TS.TaskService ts = new TS.TaskService())
 			{

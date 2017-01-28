@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
-using Smartgeek.LogRotator.Configuration;
+using IisLogRotator.Configuration;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	public class LogHelper : IDisposable
 	{
@@ -75,7 +75,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		public void WriteLineOut(String text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(text);
 
@@ -87,7 +87,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineOut(String format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0);
 
@@ -100,7 +100,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineOut(String format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1);
 
@@ -113,7 +113,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineOut(String format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1, arg2);
 
@@ -140,7 +140,7 @@ namespace Smartgeek.LogRotator
 			}
 		}
 
-		public void WriteLineError(String text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string text, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(text);
 
@@ -156,7 +156,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineError(String format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0);
 
@@ -173,7 +173,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineError(String format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1);
 
@@ -190,7 +190,7 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineError(String format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1, arg2);
 
@@ -207,14 +207,14 @@ namespace Smartgeek.LogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1, arg2);
 		}
 
-		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, String text)
+		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, string text)
 		{
 			if (traceInformation) Trace.TraceInformation(text);
 			if (traceWarning) Trace.TraceWarning(text);
 			if (traceError) Trace.TraceError(text);
 		}
 
-		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, String format, params Object[] args)
+		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, string format, params Object[] args)
 		{
 			if (traceInformation) Trace.TraceInformation(format, args);
 			if (traceWarning) Trace.TraceWarning(format, args);

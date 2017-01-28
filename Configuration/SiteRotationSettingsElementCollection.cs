@@ -4,11 +4,11 @@ using System.Configuration;
 using System.Collections.Generic;
 using Smartgeek.Configuration;
 
-namespace Smartgeek.LogRotator.Configuration
+namespace IisLogRotator.Configuration
 {
-	public class SiteRotationSettingsElementCollection : ConfigurationElementCollection<SiteRotationSettingsElement, String>
+	public class SiteRotationSettingsElementCollection : ConfigurationElementCollection<SiteRotationSettingsElement, string>
 	{
-		protected override String GetElementKey(SiteRotationSettingsElement element)
+		protected override string GetElementKey(SiteRotationSettingsElement element)
 		{
 			return element.ID;
 		}

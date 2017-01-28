@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Globalization;
 using System.DirectoryServices;
 
-namespace Smartgeek.LogRotator
+namespace IisLogRotator
 {
 	[DebuggerDisplay("ID = {ID}, Enabled = {Enabled}, FilenameFormat = {FilenameFormat}, Directory = {Directory}")]
 	public class Folder
@@ -24,12 +24,12 @@ namespace Smartgeek.LogRotator
 			
 		}
 
-		public String ID { get; private set; }
+		public string ID { get; private set; }
 		public bool Enabled { get; private set; }
 		public bool IsUTF8 { get; private set; }
-		public String Directory { get; private set; }
-		public String FilenameFormat { get; private set; }
-		public String FileExtension { get; private set; }
+		public string Directory { get; private set; }
+		public string FilenameFormat { get; private set; }
+		public string FileExtension { get; private set; }
 		public IisServiceType IisService { get; private set; }
 		public IisPeriodType Period { get; private set; }
 		public IisLogFormatType LogFormat { get; private set; }
@@ -51,7 +51,7 @@ namespace Smartgeek.LogRotator
 
 			return Create(
 				(bool)logFileElement["enabled"],
-				(String)logFileElement["directory"],
+				(string)logFileElement["directory"],
 				iisServiceType,
 				logFormat,
 				(IisPeriodType)logFileElement["period"],
@@ -76,7 +76,7 @@ namespace Smartgeek.LogRotator
 			}
 			else if (logFileEntry.Properties["LogPluginClsid"].Value != null)
 			{
-				Guid logPluginClsid = Guid.Parse((String)logFileEntry.Properties["LogPluginClsid"].Value);
+				Guid logPluginClsid = Guid.Parse((string)logFileEntry.Properties["LogPluginClsid"].Value);
 
 				if (logPluginClsid == IisLogModuleId)
 					logFormat = IisLogFormatType.IIS;
@@ -98,7 +98,7 @@ namespace Smartgeek.LogRotator
 
 			return Create(
 				((int)logFileEntry.Properties["LogType"].Value == 1),
-				(String)logFileEntry.Properties["LogFileDirectory"].Value,
+				(string)logFileEntry.Properties["LogFileDirectory"].Value,
 				iisServiceType,
 				logFormat,
 				(IisPeriodType)logFileEntry.Properties["LogFilePeriod"].Value,
@@ -109,11 +109,11 @@ namespace Smartgeek.LogRotator
 			);
 		}
 
-		private static Folder Create(bool enabled, String dir, IisServiceType iisService, IisLogFormatType logFormat, IisPeriodType period, bool isUTF8, bool isLocalTimeRollover, long truncateSize, long? siteId)
+		private static Folder Create(bool enabled, string dir, IisServiceType iisService, IisLogFormatType logFormat, IisPeriodType period, bool isUTF8, bool isLocalTimeRollover, long truncateSize, long? siteId)
 		{
-			String subdir = iisService.ToString("G");
-			String filePrefix = (logFormat == IisLogFormatType.CentralBinary) ? null : isUTF8 ? "u_" : null;
-			String fileExtension = ".log";
+			string subdir = iisService.ToString("G");
+			string filePrefix = (logFormat == IisLogFormatType.CentralBinary) ? null : isUTF8 ? "u_" : null;
+			string fileExtension = ".log";
 
 			if (logFormat != IisLogFormatType.CentralBinary && logFormat != IisLogFormatType.CentralW3C)
 			{
@@ -144,7 +144,7 @@ namespace Smartgeek.LogRotator
 					throw new NotImplementedException("logFormat=" + logFormat + " is not yet implemented");
 			}
 
-			String fileformat;
+			string fileformat;
 
 			switch (period)
 			{
@@ -156,8 +156,8 @@ namespace Smartgeek.LogRotator
 				default: throw new NotImplementedException("period=" + period + " is not yet implemented");
 			}
 
-			String directory = null;
-			String fileLogFormat = null;
+			string directory = null;
+			string fileLogFormat = null;
 
 			if (logFormat != IisLogFormatType.Custom)
 			{
@@ -165,7 +165,7 @@ namespace Smartgeek.LogRotator
 					Environment.ExpandEnvironmentVariables(dir),
 					subdir
 				);
-				fileLogFormat = String.Concat(
+				fileLogFormat = string.Concat(
 					filePrefix,
 					fileformat,
 					fileExtension
@@ -188,7 +188,7 @@ namespace Smartgeek.LogRotator
 			};
 		}
 
-		public override String ToString()
+		public override string ToString()
 		{
 			return this.Directory;
 		}
