@@ -1,5 +1,7 @@
-.vs
 .git
+.hg
+$tf*
+.vs
 bin
 obj
 packages

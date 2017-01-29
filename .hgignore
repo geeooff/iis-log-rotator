@@ -1,6 +1,10 @@
 syntax: glob
-.vs
 .git
+.hg
+$tf*
+.vs
 bin
 obj
 packages
+*.vspscc
+*.vssscc
