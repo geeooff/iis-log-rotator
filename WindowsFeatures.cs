@@ -90,7 +90,9 @@ namespace IisLogRotator
 			{
 				IisWebServerRole = HasFeatureEnabled(features, "IIS-WebServerRole"),
 				IisWebServer = HasFeatureEnabled(features, "IIS-WebServer"),
-				Iis6ManagementCompatibility = HasFeatureEnabled(features, "IIS-IIS6ManagementCompatibility")
+				Iis6ManagementCompatibility = HasFeatureEnabled(features, "IIS-IIS6ManagementCompatibility"),
+				IisFtpServer = HasFeatureEnabled(features, "IIS-FTPServer"),
+				IisFtpSvc = HasFeatureEnabled(features, "IIS-FTPSvc")
 			};
 		}
 
