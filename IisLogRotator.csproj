@@ -161,6 +161,7 @@
   <ItemGroup>
     <Content Include=".gitignore" />
     <Content Include="App.ico" />
+    <None Include=".hgignore" />
     <None Include="App.manifest" />
     <None Include="install.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
