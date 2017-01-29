@@ -7,7 +7,7 @@ using System.Resources;
 [assembly: AssemblyTitle("IIS Log Rotator")]
 [assembly: AssemblyDescription("IIS Log Rotation Program")]
 [assembly: AssemblyCompany("Geoffrey Vancoetsem")]
-[assembly: AssemblyCopyright("Copyright 2017 © Geoffrey Vancoetsem")]
+[assembly: AssemblyCopyright("Copyright 2012 © Geoffrey Vancoetsem")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
