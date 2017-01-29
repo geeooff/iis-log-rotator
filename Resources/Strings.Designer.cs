@@ -331,6 +331,15 @@ namespace IisLogRotator.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Reading {0} (IIS 6 Compatible) Manager configuration....
+        /// </summary>
+        internal static string MsgReadingIis6CompatibleManagerConfig {
+            get {
+                return ResourceManager.GetString("MsgReadingIis6CompatibleManagerConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Reading {0} Manager configuration....
         /// </summary>
         internal static string MsgReadingIisManagerConfig {
@@ -394,7 +403,7 @@ namespace IisLogRotator.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Warning: Windows versions newer than NT 6.2 were never been tested. Please report any problem..
+        ///   Looks up a localized string similar to Warning: Windows versions newer than Windows 10 / Windows Server 2016 (&gt; NT 10.0) were never been tested. Please report any problem..
         /// </summary>
         internal static string MsgUnknownWindowsVersion {
             get {

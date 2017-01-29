@@ -61,7 +61,6 @@ namespace IisLogRotator
 
 				List<Folder> folders = new List<Folder>();
 
-				string iisLegacyVersionInfo = Environment.OSVersion.GetIisLegacyVersionString();
 				string iisVersionInfo = Environment.OSVersion.GetIisVersionString();
 				Trace.TraceInformation(Strings.MsgSummaryWindowsVersion, Environment.OSVersion);
 				Trace.TraceInformation(Strings.MsgSummaryIisVersion, iisVersionInfo);
@@ -78,15 +77,36 @@ namespace IisLogRotator
 					// MSFTPSVC don't exists anymore for NT 6.1 and greater
 					bool skipLegacyFtpSvc = Environment.OSVersion.GreaterThanEqual(6, 1);
 
-					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisLegacyVersionInfo, traceInfo: true);
+					WindowsFeatures windowsFeatures = null;
+					bool windowsFeaturesDetected = false;
 
-					try
+					// Windows Optional Features detection (starting with Windows 7)
+					if (Environment.OSVersion.GreaterThanEqual(6, 1))
 					{
-						AddFoldersFromIisLegacyManager(folders, skipHttp: true, skipFtp: skipLegacyFtpSvc);
+						windowsFeatures = WindowsFeatures.GetFeatures();
+						windowsFeaturesDetected = true;
+
+						// TODO abort execution if no IIS feature detected
 					}
-					catch (Exception ex)
+
+					// add legacy IIS 6 features
+					if (!windowsFeaturesDetected || windowsFeatures.Iis6ManagementCompatibility)
 					{
-						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+						s_logHelper.WriteLineOut(Strings.MsgReadingIis6CompatibleManagerConfig, iisVersionInfo, traceInfo: true);
+
+						try
+						{
+							// TODO skip detected uninstalled features ?
+							AddFoldersFromIisLegacyManager(
+								folders,
+								skipHttp: true,
+								skipFtp: skipLegacyFtpSvc
+							);
+						}
+						catch (Exception ex)
+						{
+							HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisVersionInfo), Strings.MsgCriticalException, ex);
+						}
 					}
 
 					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisVersionInfo, traceInfo: true);
@@ -103,7 +123,7 @@ namespace IisLogRotator
 				// legacy Windows
 				else
 				{
-					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisLegacyVersionInfo, traceInfo: true);
+					s_logHelper.WriteLineOut(Strings.MsgReadingIisManagerConfig, iisVersionInfo, traceInfo: true);
 
 					try
 					{
@@ -111,7 +131,7 @@ namespace IisLogRotator
 					}
 					catch (Exception ex)
 					{
-						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisLegacyVersionInfo), Strings.MsgCriticalException, ex);
+						HandleError(s_logHelper, string.Format(Strings.MsgIisManagerAccessDenied, iisVersionInfo), Strings.MsgCriticalException, ex);
 					}
 				}
 
@@ -156,6 +176,9 @@ namespace IisLogRotator
 
 		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, bool skipHttp = false, bool skipFtp = false, bool skipSmtp = false, bool skipNntp = false)
 		{
+			if (skipHttp && skipFtp && skipSmtp && skipNntp)
+				return;
+
 			using (DirectoryEntry lm = new DirectoryEntry(@"IIS://localhost"))
 			{
 				if (!skipHttp)

@@ -195,6 +195,9 @@
   <data name="MsgProcessing" xml:space="preserve">
     <value>Traitement:</value>
   </data>
+  <data name="MsgReadingIis6CompatibleManagerConfig" xml:space="preserve">
+    <value>Lecture de la configuration du gestionnaire {0} compatible IIS 6...</value>
+  </data>
   <data name="MsgReadingIisManagerConfig" xml:space="preserve">
     <value>Lecture de la configuration du gestionnaire {0}...</value>
   </data>
@@ -217,7 +220,7 @@
     <value>version de IIS inconnue</value>
   </data>
   <data name="MsgUnknownWindowsVersion" xml:space="preserve">
-    <value>Alerte: Les versions de Windows postérieures à NT 6.2 n'ont pas été testées. Merci de rapporter tout problème.</value>
+    <value>Alerte: Les versions de Windows postérieures à Windows 10 / Windows Server 2016 (&gt; NT 10.0) n'ont pas été testées. Merci de rapporter tout problème.</value>
   </data>
   <data name="MsgXFoldersToProcess" xml:space="preserve">
     <value>{0} {1} à traiter:</value>

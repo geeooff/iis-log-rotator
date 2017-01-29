@@ -10,7 +10,7 @@ namespace IisLogRotator.Configuration
 {
 	public static class InstallerConfig
 	{
-		private static readonly Object s_initializeSyncRoot = new Object();
+		private static readonly object s_initializeSyncRoot = new object();
 
 		private static bool s_initialized;
 		private static Exception s_initializeException;

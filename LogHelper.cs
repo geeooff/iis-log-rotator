@@ -87,7 +87,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineOut(string format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0);
 
@@ -100,7 +100,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineOut(string format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, object arg0, object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1);
 
@@ -113,7 +113,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineOut(string format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineOut(string format, object arg0, object arg1, object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Out.WriteLine(format, arg0, arg1, arg2);
 
@@ -156,7 +156,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, text);
 		}
 
-		public void WriteLineError(string format, Object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, object arg0, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0);
 
@@ -173,7 +173,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0);
 		}
 
-		public void WriteLineError(string format, Object arg0, Object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, object arg0, object arg1, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1);
 
@@ -190,7 +190,7 @@ namespace IisLogRotator
 			WriteTrace(traceInfo, traceWarning, traceError, format, arg0, arg1);
 		}
 
-		public void WriteLineError(string format, Object arg0, Object arg1, Object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
+		public void WriteLineError(string format, object arg0, object arg1, object arg2, bool traceInfo = false, bool traceWarning = false, bool traceError = false)
 		{
 			Console.Error.WriteLine(format, arg0, arg1, arg2);
 
@@ -214,7 +214,7 @@ namespace IisLogRotator
 			if (traceError) Trace.TraceError(text);
 		}
 
-		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, string format, params Object[] args)
+		private void WriteTrace(bool traceInformation, bool traceWarning, bool traceError, string format, params object[] args)
 		{
 			if (traceInformation) Trace.TraceInformation(format, args);
 			if (traceWarning) Trace.TraceWarning(format, args);

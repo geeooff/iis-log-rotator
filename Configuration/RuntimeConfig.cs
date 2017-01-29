@@ -8,7 +8,7 @@ namespace IisLogRotator.Configuration
 {
 	public static class RuntimeConfig
 	{
-		private static readonly Object s_rotationSectionInitializeSyncRoot = new Object();
+		private static readonly object s_rotationSectionInitializeSyncRoot = new object();
 
 		private static System.Configuration.Configuration s_config;
 		private static RotationSection s_rotationSection;

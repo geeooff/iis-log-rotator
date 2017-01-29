@@ -155,6 +155,8 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Include="UserFileAccessRights.cs" />
+    <Compile Include="WindowsFeatures.cs" />
+    <Compile Include="WindowsVersion.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
