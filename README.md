@@ -1,8 +1,6 @@
 ﻿# IIS Log Rotator
 Microsoft Internet Information Services Log Rotation program.
 
----
-
 ## Features
 
 1. Autodetects installed IIS services and file logging settings
@@ -38,8 +36,6 @@ Web Management Service (WMSvc) logs are __not yet__ supported.
 * Windows Server 2008 / Vista only: IIS 6 Metabase Compatibility feature
 * Administrator rights (because of WMI and IIS Metabase readings)
 
----
-
 ## How to run
 
 1. Extract the program to a local folder
@@ -52,14 +48,13 @@ If you need to execute the program daily and have reports to Windows Event Log,
 you should register it to Windows Task Scheduler.
 
 1. Execute `install.cmd` with Administrator rights
-2. Modify scheduled task named `IIS Logs Rotation` if not satisfied with default settings (every day at 1:00 am UTC)
+2. Modify scheduled task named `IIS Logs Rotation` manually if not satisfied with default settings (every day at 1:00 am UTC)
+3. Enable scheduled task named `IIS Logs Rotation` manually, or execute `SCHTASKS /Change /TN "IIS Logs Rotation" /ENABLE`
 
 ## How to uninstall / unschedule
 
 * To remove everything, execute `uninstall.cmd` with Administrator rights
 * To disable the scheduled task, disable Windows scheduled task named `IIS Logs Rotation`, or execute `SCHTASKS /Change /TN "IIS Logs Rotation" /DISABLE`
-
----
 
 ## Settings
 
@@ -93,7 +88,16 @@ Example for `W3SVC1` Website settings, to do deletion only after 30 days :
 </rotation>
 ```
 
-### `defaultSettings` / `siteSettings` allowed values
+### `rotation` element allowed attribute values
+
+| Attribute | Values |
+| --- | --- |
+| `enableEventLog` | `true` to enable Windows event log reports or `false` (default) to disable |
+
+Windows event logs reports are enabled when the program is installed using `install.cmd` and should not be enabled without,
+or Windows will complain about missing event log source identifier.
+
+### `defaultSettings` / `siteSettings` elements allowed attribute values
 
 | Attribute | Values |
 | --- | --- |

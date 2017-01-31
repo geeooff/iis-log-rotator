@@ -25,6 +25,14 @@ namespace IisLogRotator
 
 		public override void Install(IDictionary stateSaver)
 		{
+#if DEBUG
+			if (!Debugger.IsAttached)
+			{
+				Debugger.Launch();
+			}
+			Debugger.Break();
+#endif
+
 			base.Install(stateSaver);
 
 			previousEnableEventLog = InstallerConfig.EnableEventLog;
@@ -70,6 +78,14 @@ namespace IisLogRotator
 
 		public override void Uninstall(IDictionary savedState)
 		{
+#if DEBUG
+			if (!Debugger.IsAttached)
+			{
+				Debugger.Launch();
+			}
+			Debugger.Break();
+#endif
+
 			base.Uninstall(savedState);
 
 			try
@@ -112,50 +128,41 @@ namespace IisLogRotator
 			// init. task scheduler service engine
 			using (TS.TaskService ts = new TS.TaskService())
 			{
-				// check if scheduler engine is V2 (starting with 
+				// check if scheduler engine is V2
 				isNewGen = (ts.HighestSupportedVersion >= new Version(1, 2));
 
 				TS.TaskDefinition td = ts.NewTask();
+				td.RegistrationInfo.Description = DefaultTaskDescription;
 
-				try
+				td.Actions.Add(
+					new TS.ExecAction(targetExeFileInfo.FullName)
+				);
+
+				// triggers every day, one hour after midnight UTC
+				TS.DailyTrigger trigger = new TS.DailyTrigger();
+				trigger.StartBoundary = new DateTime(1982, 4, 15, 1, 0, 0, DateTimeKind.Utc);
+				td.Triggers.Add(trigger);
+
+				if (isNewGen)
 				{
-					td.RegistrationInfo.Description = DefaultTaskDescription;
-
-					td.Actions.Add(
-						new TS.ExecAction(targetExeFileInfo.FullName)
-					);
-
-					// triggers every day, one hour after midnight UTC
-					TS.DailyTrigger trigger = new TS.DailyTrigger();
-					trigger.StartBoundary = new DateTime(1982, 4, 15, 1, 0, 0, DateTimeKind.Utc);
-					td.Triggers.Add(trigger);
-
-					if (isNewGen)
-					{
-						td.Settings.Priority = ProcessPriorityClass.BelowNormal;
-					}
-
-					td.Settings.ExecutionTimeLimit = TimeSpan.FromDays(1d);
-					td.Settings.DisallowStartIfOnBatteries = false;
-					td.Settings.StopIfGoingOnBatteries = false;
-
-					// the task needs to be explicitly enabled by user
-					td.Settings.Enabled = false;
-
-					TS.Task task = ts.RootFolder.RegisterTaskDefinition(
-						DefaultTaskName,
-						td,
-						TS.TaskCreation.CreateOrUpdate,
-						isNewGen ? "S-1-5-18" : null,
-						LogonType: TS.TaskLogonType.ServiceAccount
-					);
-					taskName = task.Name;
+					td.Settings.Priority = ProcessPriorityClass.BelowNormal;
 				}
-				finally
-				{
-					// TS.TaskDefinition have .Dispose() method but isn't IDisposable o_O
-					td.Dispose();
-				}
+
+				td.Settings.ExecutionTimeLimit = TimeSpan.FromDays(1d);
+				td.Settings.DisallowStartIfOnBatteries = false;
+				td.Settings.StopIfGoingOnBatteries = false;
+
+				// the task needs to be explicitly enabled by user
+				td.Settings.Enabled = false;
+
+				TS.Task task = ts.RootFolder.RegisterTaskDefinition(
+					DefaultTaskName,
+					td,
+					TS.TaskCreation.CreateOrUpdate,
+					isNewGen ? "SYSTEM" : null,
+					LogonType: TS.TaskLogonType.ServiceAccount
+				);
+				taskName = task.Name;
 			}
 
 			// remembers the registered task name for future uninstall
@@ -166,7 +173,7 @@ namespace IisLogRotator
 			this.Context.LogMessage("Information: The scheduled task is DISABLED by default !");
 
 			// TODO don't advise to use schtasks.exe for older windows (which older ones ?)
-			this.Context.LogMessage("Information: Execute this command line to enable: schtasks.exe /Change /TN \"" + taskName + "\" /ENABLE");
+			this.Context.LogMessage("Information: Execute this command line to enable: SCHTASKS /Change /TN \"" + taskName + "\" /ENABLE");
 		}
 
 		private void UninstallTask(IDictionary savedState)
