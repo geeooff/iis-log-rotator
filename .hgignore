@@ -8,3 +8,4 @@ obj
 packages
 *.vspscc
 *.vssscc
+*.csproj.user

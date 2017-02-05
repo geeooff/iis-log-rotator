@@ -201,9 +201,10 @@ namespace IisLogRotator
 					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.NNTPSVC);
 				}
 
-				lm.Close();
-			}
-		}
+                // CA2202: Do not dispose objects multiple times
+                //lm.Close();
+            }
+        }
 
 		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
 		{
@@ -251,7 +252,7 @@ namespace IisLogRotator
 				if (ex.ErrorCode == 0x2030)
 					Trace.TraceInformation(Strings.MsgIisFeatureNotFound, name, ex.Message);
 				else
-					throw ex;
+					throw;
 			}
 
 			if (svc != null)
@@ -315,9 +316,10 @@ namespace IisLogRotator
 						}
 					}
 
-					svc.Close();
-				}
-				finally
+                    // CA2202: Do not dispose objects multiple times
+                    //svc.Close();
+                }
+                finally
 				{
 					svc.Dispose();
 				}
