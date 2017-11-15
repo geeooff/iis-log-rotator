@@ -159,12 +159,10 @@
     <Compile Include="WindowsVersion.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include=".gitignore" />
     <Content Include="App.ico" />
     <Content Include="LICENSE.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include=".hgignore" />
     <None Include="App.manifest" />
     <None Include="install.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
