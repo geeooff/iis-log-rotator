@@ -1,6 +1,8 @@
 ﻿# IIS Log Rotator
 Microsoft Internet Information Services Log Rotation program.
 
+![Last build](https://smartgeek.visualstudio.com/_apis/public/build/definitions/7b359fe4-865f-4d6f-9e35-456336a8b36c/8/badge)
+
 ## Features
 
 1. Autodetects installed IIS services and file logging settings
