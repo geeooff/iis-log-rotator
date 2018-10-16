@@ -25,9 +25,9 @@ namespace IisLogRotator
 
 		internal bool Iis6ManagementCompatibility { get; private set; }
 
-		public bool IisFtpServer { get; private set; }
+		internal bool IisFtpServer { get; private set; }
 
-		public bool IisFtpSvc { get; private set; }
+		internal bool IisFtpSvc { get; private set; }
 
 		internal static WindowsFeatures GetFeatures()
 		{
