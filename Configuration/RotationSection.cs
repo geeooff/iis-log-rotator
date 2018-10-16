@@ -13,6 +13,7 @@ namespace IisLogRotator.Configuration
 		private static readonly ConfigurationProperty s_propEnableEventLog;
 		private static readonly ConfigurationProperty s_propDefaultSettings;
 		private static readonly ConfigurationProperty s_propSitesSettings;
+		private static readonly ConfigurationProperty s_propHttpSysErrorSettings;
 
 		static RotationSection()
 		{
@@ -44,10 +45,20 @@ namespace IisLogRotator.Configuration
 				ConfigurationPropertyOptions.IsDefaultCollection
 			);
 
-			s_properties = new ConfigurationPropertyCollection();
-			s_properties.Add(s_propEnableEventLog);
-			s_properties.Add(s_propDefaultSettings);
-			s_properties.Add(s_propSitesSettings);
+			s_propHttpSysErrorSettings = new ConfigurationProperty(
+				"httpSysErrorSettings",
+				typeof(HttpSysErrorRotationSettingsElement),
+				new HttpSysErrorRotationSettingsElement(),
+				ConfigurationPropertyOptions.None
+			);
+
+			s_properties = new ConfigurationPropertyCollection
+			{
+				s_propEnableEventLog,
+				s_propDefaultSettings,
+				s_propSitesSettings,
+				s_propHttpSysErrorSettings
+			};
 		}
 
 		protected override ConfigurationPropertyCollection Properties
@@ -81,6 +92,12 @@ namespace IisLogRotator.Configuration
 		{
 			get { return ((SiteRotationSettingsElementCollection)(this[s_propSitesSettings])); }
 			set { this[s_propSitesSettings] = value; }
+		}
+
+		public HttpSysErrorRotationSettingsElement HttpSysErrorSettings
+		{
+			get { return ((HttpSysErrorRotationSettingsElement)(this[s_propHttpSysErrorSettings])); }
+			set { this[s_propHttpSysErrorSettings] = value; }
 		}
 
 		public RotationSettingsElement GetSiteSettingsOrDefault(string id)

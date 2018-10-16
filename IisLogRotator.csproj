@@ -114,6 +114,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\ConfigurationElementCollection.cs" />
+    <Compile Include="Configuration\HttpErrorRotationSettingsElement.cs" />
     <Compile Include="Configuration\InstallerConfig.cs" />
     <Compile Include="Configuration\SiteRotationSettingsElementCollection.cs" />
     <Compile Include="Configuration\RotationSettingsElement.cs" />
