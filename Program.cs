@@ -201,10 +201,10 @@ namespace IisLogRotator
 					AddFoldersFromIisLegacyManager(folders, lm, IisServiceType.NNTPSVC);
 				}
 
-                // CA2202: Do not dispose objects multiple times
-                //lm.Close();
-            }
-        }
+				// CA2202: Do not dispose objects multiple times
+				//lm.Close();
+			}
+		}
 
 		private static void AddFoldersFromIisLegacyManager(List<Folder> folders, DirectoryEntry lm, IisServiceType svcType)
 		{
@@ -316,10 +316,10 @@ namespace IisLogRotator
 						}
 					}
 
-                    // CA2202: Do not dispose objects multiple times
-                    //svc.Close();
-                }
-                finally
+					// CA2202: Do not dispose objects multiple times
+					//svc.Close();
+				}
+				finally
 				{
 					svc.Dispose();
 				}
