@@ -160,7 +160,7 @@ namespace IisLogRotator
 					td,
 					TS.TaskCreation.CreateOrUpdate,
 					isNewGen ? "SYSTEM" : null,
-					LogonType: TS.TaskLogonType.ServiceAccount
+					logonType: TS.TaskLogonType.ServiceAccount
 				);
 				taskName = task.Name;
 			}
