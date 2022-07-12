@@ -1,7 +1,7 @@
 ﻿# IIS Log Rotator
 Microsoft Internet Information Services Log Rotation program.
 
-![Last build](https://smartgeek.visualstudio.com/_apis/public/build/definitions/7b359fe4-865f-4d6f-9e35-456336a8b36c/8/badge)
+![Last build](https://dev.azure.com/geeooff/IisLogRotator/_apis/build/status/Visual%20Studio%20Build?branchName=master)
 
 ## Features
 
