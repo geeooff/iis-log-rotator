@@ -1,42 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Management;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IisLogRotator
 {
-	/// <summary>
-	/// Windows features detection helper
-	/// </summary>
-	/// <seealso cref="https://msdn.microsoft.com/en-us/library/ee309383(v=vs.85).aspx"/>
-	internal class WindowsFeatures
-	{
-		private WindowsFeatures()
-		{
+    /// <summary>
+    /// Windows features detection helper
+    /// </summary>
+    /// <seealso cref="https://msdn.microsoft.com/en-us/library/ee309383(v=vs.85).aspx"/>
+    internal class WindowsFeatures
+    {
+        private WindowsFeatures()
+        {
 
-		}
+        }
 
-		internal bool IisWebServerRole { get; private set; }
+        internal bool IisWebServerRole { get; private set; }
 
-		internal bool IisWebServer { get; private set; }
+        internal bool IisWebServer { get; private set; }
 
-		internal bool Iis6ManagementCompatibility { get; private set; }
+        internal bool Iis6ManagementCompatibility { get; private set; }
 
-		public bool IisFtpServer { get; private set; }
+        public bool IisFtpServer { get; private set; }
 
-		public bool IisFtpSvc { get; private set; }
+        public bool IisFtpSvc { get; private set; }
 
-		internal static WindowsFeatures GetFeatures()
-		{
-			ManagementScope scope = new ManagementScope(@"\\localhost\root\cimv2");
+        internal static WindowsFeatures GetFeatures()
+        {
+            ManagementScope scope = new ManagementScope(@"\\localhost\root\cimv2");
 
-			// TODO detect windows server roles/features first (Win32_ServerFeature), then client features (Win32_OptionalFeature)
-			// https://msdn.microsoft.com/en-us/library/cc280268(v=vs.85).aspx
+            // TODO detect windows server roles/features first (Win32_ServerFeature), then client features (Win32_OptionalFeature)
+            // https://msdn.microsoft.com/en-us/library/cc280268(v=vs.85).aspx
 
-			WqlObjectQuery query = new WqlObjectQuery(@"
+            WqlObjectQuery query = new WqlObjectQuery(@"
 				SELECT
 					Name,
 					InstallState
@@ -45,20 +41,20 @@ namespace IisLogRotator
 				WHERE
 					Name LIKE 'IIS%'
 					OR Name LIKE 'Smtpsvc%'
-			"); 
+			");
 
-			Dictionary<string, uint> features;
-			
-			using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(scope, query))
-			{
-				features = searcher
-					.Get()
-					.Cast<ManagementObject>()
-					.ToDictionary(
-						obj => (string)obj.GetPropertyValue("Name"),
-						obj => (uint)obj.GetPropertyValue("InstallState")
-					);
-			}
+            Dictionary<string, uint> features;
+
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(scope, query))
+            {
+                features = searcher
+                    .Get()
+                    .Cast<ManagementObject>()
+                    .ToDictionary(
+                        obj => (string)obj.GetPropertyValue("Name"),
+                        obj => (uint)obj.GetPropertyValue("InstallState")
+                    );
+            }
 
 #if DEBUG
 			Debug.WriteLine("Detected IIS features:");
@@ -86,19 +82,19 @@ namespace IisLogRotator
 			Debug.Unindent();
 #endif
 
-			return new WindowsFeatures()
-			{
-				IisWebServerRole = HasFeatureEnabled(features, "IIS-WebServerRole"),
-				IisWebServer = HasFeatureEnabled(features, "IIS-WebServer"),
-				Iis6ManagementCompatibility = HasFeatureEnabled(features, "IIS-IIS6ManagementCompatibility"),
-				IisFtpServer = HasFeatureEnabled(features, "IIS-FTPServer"),
-				IisFtpSvc = HasFeatureEnabled(features, "IIS-FTPSvc")
-			};
-		}
+            return new WindowsFeatures()
+            {
+                IisWebServerRole = HasFeatureEnabled(features, "IIS-WebServerRole"),
+                IisWebServer = HasFeatureEnabled(features, "IIS-WebServer"),
+                Iis6ManagementCompatibility = HasFeatureEnabled(features, "IIS-IIS6ManagementCompatibility"),
+                IisFtpServer = HasFeatureEnabled(features, "IIS-FTPServer"),
+                IisFtpSvc = HasFeatureEnabled(features, "IIS-FTPSvc")
+            };
+        }
 
-		internal static bool HasFeatureEnabled(Dictionary<string, uint> features, string name)
-		{
-			return features.ContainsKey(name) ? (features[name] == 1) : false;
-		}
-	}
+        internal static bool HasFeatureEnabled(Dictionary<string, uint> features, string name)
+        {
+            return features.ContainsKey(name) ? (features[name] == 1) : false;
+        }
+    }
 }

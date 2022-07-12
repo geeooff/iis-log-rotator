@@ -34,7 +34,7 @@ Web Management Service (WMSvc) logs are __not yet__ supported.
 
 ## System requirements
 
-* Microsoft .NET Framework 4.5
+* Microsoft .NET Framework 4.8
 * Windows Server 2008 / Vista only: IIS 6 Metabase Compatibility feature
 * Administrator rights (because of WMI and IIS Metabase readings)
 

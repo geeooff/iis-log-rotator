@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Resources;
+using System.Runtime.InteropServices;
 
 [assembly: AssemblyProduct("IisLogRotator")]
 [assembly: AssemblyTitle("IIS Log Rotator")]
@@ -26,4 +25,4 @@ using System.Resources;
 
 [assembly: AssemblyVersion("1.9.0.0")]
 [assembly: AssemblyFileVersion("1.9.0.0")]
-[assembly: AssemblyInformationalVersion("1.8.2")]
+[assembly: AssemblyInformationalVersion("1.9")]
