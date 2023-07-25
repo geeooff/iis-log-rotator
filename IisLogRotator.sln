@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IisLogRotator", "IisLogRotator.csproj", "{AC5644F5-F491-4E67-BD18-0B5BCC9A1198}"
 EndProject
@@ -18,13 +18,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 2
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://smartgeek.visualstudio.com/
-		SccProjectUniqueName0 = IisLogRotator.csproj
-		SccLocalPath0 = .
-		SccLocalPath1 = .
 	EndGlobalSection
 EndGlobal
